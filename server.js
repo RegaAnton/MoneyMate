@@ -1,6 +1,8 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs"); // Tambahan library untuk enkripsi password
+
 const app = express();
 
 app.use(express.json());
@@ -38,25 +40,61 @@ if (!fs.existsSync(CATEGORIES_FILE)) {
 // --- Auth (Login & Register) ---
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
-  const users = readJson(USERS_FILE); // Baca dari users.json
+  const users = readJson(USERS_FILE);
 
-  const user = users.find(
-    (u) => u.username === username && u.password === password,
-  );
-  if (user)
+  // Cari index user agar bisa meng-update datanya untuk migrasi
+  const userIndex = users.findIndex((u) => u.username === username);
+
+  if (userIndex === -1) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Username atau password salah" });
+  }
+
+  const user = users[userIndex];
+  let isMatch = false;
+
+  // Cek apakah password sudah di-hash (bcrypt biasanya diawali dengan "$2a$" atau "$2b$" dan panjang 60)
+  const isHashed =
+    user.password &&
+    user.password.startsWith("$2") &&
+    user.password.length === 60;
+
+  if (isHashed) {
+    // Jika sudah aman (hash), bandingkan menggunakan bcrypt
+    isMatch = bcrypt.compareSync(password, user.password);
+  } else {
+    // [LAZY MIGRATION] Jika masih plain text (akun lama yang dibuat sebelumnya)
+    isMatch = password === user.password;
+
+    if (isMatch) {
+      // Karena password benar, kita langsung amankan password lamanya menjadi hash
+      const salt = bcrypt.genSaltSync(10);
+      user.password = bcrypt.hashSync(password, salt);
+
+      // Simpan perubahan ke users.json secara diam-diam
+      users[userIndex] = user;
+      writeJson(USERS_FILE, users);
+      console.log(
+        `[Keamanan] Password akun '${username}' berhasil dienkripsi!`,
+      );
+    }
+  }
+
+  if (isMatch) {
     res.json({ success: true, userId: user.id, username: user.username });
-  else
+  } else {
     res
       .status(401)
       .json({ success: false, message: "Username atau password salah" });
+  }
 });
 
 app.post("/api/register", (req, res) => {
-  const { username, email, password } = req.body; // Ambil email dari req.body
+  const { username, email, password } = req.body;
   const users = readJson(USERS_FILE);
 
-  // --- VALIDASI EMAIL ---
-  // Regex untuk memastikan format email benar (contoh: nama@domain.com)
+  // Validasi format email menggunakan Regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res
@@ -78,8 +116,17 @@ app.post("/api/register", (req, res) => {
       .json({ success: false, message: "Email sudah terdaftar!" });
   }
 
-  // Simpan user baru lengkap dengan email
-  const newUser = { id: Date.now(), username, email, password };
+  // Enkripsi password untuk pendaftar baru
+  const salt = bcrypt.genSaltSync(10);
+  const hashedPassword = bcrypt.hashSync(password, salt);
+
+  const newUser = {
+    id: Date.now(),
+    username,
+    email,
+    password: hashedPassword,
+  };
+
   users.push(newUser);
   writeJson(USERS_FILE, users);
 
@@ -88,18 +135,18 @@ app.post("/api/register", (req, res) => {
 
 // --- Categories (Read-Only) ---
 app.get("/api/categories", (req, res) => {
-  const categories = readJson(CATEGORIES_FILE); // Baca dari categories.json
+  const categories = readJson(CATEGORIES_FILE);
   res.json(categories);
 });
 
 // --- Expenses CRUD ---
 app.get("/api/expenses/:userId", (req, res) => {
-  const expenses = readJson(EXPENSES_FILE); // Baca dari expenses.json
+  const expenses = readJson(EXPENSES_FILE);
   res.json(expenses.filter((e) => e.userId == req.params.userId));
 });
 
 app.post("/api/expenses", (req, res) => {
-  const expenses = readJson(EXPENSES_FILE); // Baca dari expenses.json
+  const expenses = readJson(EXPENSES_FILE);
 
   const newExp = {
     id: Date.now(),
@@ -111,14 +158,14 @@ app.post("/api/expenses", (req, res) => {
   };
 
   expenses.push(newExp);
-  writeJson(EXPENSES_FILE, expenses); // Tulis ke expenses.json
+  writeJson(EXPENSES_FILE, expenses);
   res.json(newExp);
 });
 
 app.delete("/api/expenses/:id", (req, res) => {
-  let expenses = readJson(EXPENSES_FILE); // Baca dari expenses.json
+  let expenses = readJson(EXPENSES_FILE);
   expenses = expenses.filter((e) => e.id != req.params.id);
-  writeJson(EXPENSES_FILE, expenses); // Tulis ulang ke expenses.json
+  writeJson(EXPENSES_FILE, expenses);
   res.json({ success: true });
 });
 
