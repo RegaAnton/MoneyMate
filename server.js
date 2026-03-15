@@ -52,18 +52,36 @@ app.post("/api/login", (req, res) => {
 });
 
 app.post("/api/register", (req, res) => {
-  const { username, password } = req.body;
-  const users = readJson(USERS_FILE); // Baca dari users.json
+  const { username, email, password } = req.body; // Ambil email dari req.body
+  const users = readJson(USERS_FILE);
 
+  // --- VALIDASI EMAIL ---
+  // Regex untuk memastikan format email benar (contoh: nama@domain.com)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Format email tidak valid!" });
+  }
+
+  // Cek apakah username sudah ada
   if (users.find((u) => u.username === username)) {
     return res
       .status(400)
       .json({ success: false, message: "Username sudah terdaftar!" });
   }
 
-  const newUser = { id: Date.now(), username, password };
+  // Cek apakah email sudah ada
+  if (users.find((u) => u.email === email)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email sudah terdaftar!" });
+  }
+
+  // Simpan user baru lengkap dengan email
+  const newUser = { id: Date.now(), username, email, password };
   users.push(newUser);
-  writeJson(USERS_FILE, users); // Tulis ke users.json
+  writeJson(USERS_FILE, users);
 
   res.json({ success: true, message: "Registrasi berhasil, silakan masuk." });
 });

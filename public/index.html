@@ -188,6 +188,16 @@
                 required
               /><label>Pilih Username</label>
             </div>
+
+            <div class="form-floating mb-3">
+              <input
+                type="email"
+                id="regEmail"
+                class="form-control"
+                placeholder="name@example.com"
+                required
+              /><label>Masukkan Email</label>
+            </div>
             <div class="form-floating mb-4">
               <input
                 type="password"
@@ -813,6 +823,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               username: document.getElementById("regUsername").value,
+              email: document.getElementById("regEmail").value, // <-- Tambahkan baris ini
               password: document.getElementById("regPassword").value,
             }),
           });
@@ -820,6 +831,7 @@
           if (data.success) {
             alert("Berhasil! Silakan masuk.");
             toggleAuthView("login");
+            document.getElementById("registerForm").reset();
           } else alert(data.message);
         });
 
