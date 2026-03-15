@@ -1,0 +1,230 @@
+[
+  {
+    "id": 1,
+    "name": "Amal & Donasi"
+  },
+  {
+    "id": 2,
+    "name": "Hadiah"
+  },
+  {
+    "id": 3,
+    "name": "Pemakaman"
+  },
+  {
+    "id": 4,
+    "name": "Pernikahan"
+  },
+  {
+    "id": 5,
+    "name": "Belanja Bulanan"
+  },
+  {
+    "id": 6,
+    "name": "Belanja Fashion"
+  },
+  {
+    "id": 7,
+    "name": "Belanja Gadget & Elektronik"
+  },
+  {
+    "id": 8,
+    "name": "Cicilan Kendaraan"
+  },
+  {
+    "id": 9,
+    "name": "Cicilan Rumah"
+  },
+  {
+    "id": 10,
+    "name": "Cicilan Pinjaman"
+  },
+  {
+    "id": 11,
+    "name": "Film & Musik"
+  },
+  {
+    "id": 12,
+    "name": "Games"
+  },
+  {
+    "id": 13,
+    "name": "Hobi"
+  },
+  {
+    "id": 14,
+    "name": "Konser"
+  },
+  {
+    "id": 15,
+    "name": "Layanan Streaming"
+  },
+  {
+    "id": 16,
+    "name": "Liburan"
+  },
+  {
+    "id": 17,
+    "name": "Nongkrong"
+  },
+  {
+    "id": 18,
+    "name": "Asisten Rumah Tangga"
+  },
+  {
+    "id": 19,
+    "name": "Kebutuhan Anak"
+  },
+  {
+    "id": 20,
+    "name": "Kebutuhan Orang Tua"
+  },
+  {
+    "id": 21,
+    "name": "Laundry"
+  },
+  {
+    "id": 22,
+    "name": "Peliharaan"
+  },
+  {
+    "id": 23,
+    "name": "Renovasi"
+  },
+  {
+    "id": 24,
+    "name": "Biaya Dokter"
+  },
+  {
+    "id": 25,
+    "name": "Gym/Fitness"
+  },
+  {
+    "id": 26,
+    "name": "Obat"
+  },
+  {
+    "id": 27,
+    "name": "Olahraga"
+  },
+  {
+    "id": 28,
+    "name": "Perawatan Diri"
+  },
+  {
+    "id": 29,
+    "name": "Makanan & Minuman"
+  },
+  {
+    "id": 30,
+    "name": "Buku"
+  },
+  {
+    "id": 31,
+    "name": "Uang Sekolah/Kuliah"
+  },
+  {
+    "id": 32,
+    "name": "Dana Darurat"
+  },
+  {
+    "id": 33,
+    "name": "Investasi"
+  },
+  {
+    "id": 34,
+    "name": "Pajak"
+  },
+  {
+    "id": 35,
+    "name": "Pendidikan"
+  },
+  {
+    "id": 36,
+    "name": "Pensiun"
+  },
+  {
+    "id": 37,
+    "name": "Rumah/Kost/Apartemen"
+  },
+  {
+    "id": 38,
+    "name": "Air"
+  },
+  {
+    "id": 39,
+    "name": "Ansuransi"
+  },
+  {
+    "id": 40,
+    "name": "Biaya Pemeliharaan"
+  },
+  {
+    "id": 41,
+    "name": "Gas"
+  },
+  {
+    "id": 42,
+    "name": "Internet"
+  },
+  {
+    "id": 43,
+    "name": "Kartu Kredit"
+  },
+  {
+    "id": 44,
+    "name": "Langganan"
+  },
+  {
+    "id": 45,
+    "name": "Listrik"
+  },
+  {
+    "id": 46,
+    "name": "Pulsa & Paket Data"
+  },
+  {
+    "id": 47,
+    "name": "Sewa"
+  },
+  {
+    "id": 48,
+    "name": "TV Kabel & Satelit"
+  },
+  {
+    "id": 49,
+    "name": "Telpon Rumah"
+  },
+  {
+    "id": 50,
+    "name": "Topup E-Money"
+  },
+  {
+    "id": 51,
+    "name": "Topup E-Wallet"
+  },
+  {
+    "id": 52,
+    "name": "Bensin"
+  },
+  {
+    "id": 53,
+    "name": "Parkir"
+  },
+  {
+    "id": 54,
+    "name": "Service Kendaraan"
+  },
+  {
+    "id": 55,
+    "name": "Taksi & Ojek Online"
+  },
+  {
+    "id": 56,
+    "name": "Transportasi Publik"
+  },
+  {
+    "id": 57,
+    "name": "Tiket Perjalanan"
+  }
+]
