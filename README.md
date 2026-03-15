@@ -31,3 +31,40 @@ moneymate/
 ├── package.json            # Informasi project dan dependencies
 └── README.md
 ```
+
+## 🚀 Panduan Instalasi (Lokal)
+
+Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi MoneyMate di komputer lokal Anda:
+
+### 1. Persyaratan Sistem
+
+Pastikan komputer Anda sudah terinstal **[Node.js](https://nodejs.org/)** (disarankan versi 18.x atau yang lebih baru). Anda bisa mengeceknya dengan menjalankan perintah berikut di terminal:
+
+```bash
+node -v
+```
+
+### 2. Clone Repository
+
+Unduh kode sumber aplikasi ini ke komputer Anda menggunakan Git:
+
+```bash
+git clone https://github.com/RegaAnton/MoneyMate.git
+cd moneymate
+```
+
+### 3. Install Dependencies
+
+Instal semua pustaka yang dibutuhkan oleh server (seperti Express.js) dengan menjalankan:
+
+```bash
+npm install
+```
+
+### 4. Jalankan Server Aplikasi
+
+Setelah semuanya siap, nyalakan server lokal dengan perintah:
+
+```bash
+node server.js
+```
