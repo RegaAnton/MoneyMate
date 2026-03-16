@@ -1,6 +1,7 @@
 let categorySelectInstance = null;
 let currentUserId = localStorage.getItem("userId");
 let currentUsername = localStorage.getItem("username");
+let currentFullName = localStorage.getItem("fullName") || currentUsername;
 let categories = [];
 let expenses = [];
 let dashboardFilter = "bulan";
@@ -73,7 +74,7 @@ function isDateInFilter(dateString, filterType, viewContext) {
 }
 
 if (currentUserId) {
-  document.getElementById("displayUsername").innerText = currentUsername;
+  document.getElementById("displayUsername").innerText = currentFullName;
   showApp();
 } else {
   document.getElementById("loginView").classList.remove("hidden");
@@ -110,8 +111,10 @@ function navigate(page) {
     .forEach((el) => el.classList.remove("active"));
   document.getElementById(`page-${page}`).classList.remove("hidden");
   document.getElementById(`nav-${page}`).classList.add("active");
+
   if (page === "dashboard") processDashboard();
   if (page === "expenses") renderExpensesTable();
+  if (page === "settings") loadSettingsData(); // Panggil fungsi saat buka menu setting
 }
 
 async function loadData() {
@@ -130,9 +133,7 @@ async function loadData() {
 
 function renderCategories() {
   const select = document.getElementById("expCategory");
-  if (categorySelectInstance) {
-    categorySelectInstance.destroy();
-  }
+  if (categorySelectInstance) categorySelectInstance.destroy();
   select.innerHTML =
     '<option value="" disabled selected>Pilih atau ketik kategori...</option>';
   categories.forEach(
@@ -142,10 +143,7 @@ function renderCategories() {
   categorySelectInstance = new TomSelect("#expCategory", {
     create: false,
     placeholder: "Ketik untuk mencari kategori...",
-    sortField: {
-      field: "text",
-      direction: "asc",
-    },
+    sortField: { field: "text", direction: "asc" },
   });
 }
 
@@ -243,6 +241,7 @@ function changePage(p) {
   renderExpensesTable();
 }
 
+// --- LOGIKA AUTHENTICATION ---
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const res = await fetch("/api/login", {
@@ -257,9 +256,11 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   if (data.success) {
     localStorage.setItem("userId", data.userId);
     localStorage.setItem("username", data.username);
+    localStorage.setItem("fullName", data.fullName);
     currentUserId = data.userId;
     currentUsername = data.username;
-    document.getElementById("displayUsername").innerText = currentUsername;
+    currentFullName = data.fullName;
+    document.getElementById("displayUsername").innerText = currentFullName;
     showApp();
   } else alert(data.message);
 });
@@ -272,6 +273,7 @@ document
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        fullName: document.getElementById("regFullName").value, // Kirim fullName
         username: document.getElementById("regUsername").value,
         email: document.getElementById("regEmail").value,
         password: document.getElementById("regPassword").value,
@@ -285,6 +287,57 @@ document
     } else alert(data.message);
   });
 
+// --- LOGIKA PENGATURAN AKUN ---
+async function loadSettingsData() {
+  const res = await fetch(`/api/user/${currentUserId}`);
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById("setFullName").value = data.fullName;
+    document.getElementById("setUsername").value = data.username;
+    document.getElementById("setEmail").value = data.email;
+    document.getElementById("setOldPassword").value = "";
+    document.getElementById("setNewPassword").value = "";
+  }
+}
+
+document
+  .getElementById("settingsForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const bodyData = {
+      fullName: document.getElementById("setFullName").value,
+      username: document.getElementById("setUsername").value,
+      email: document.getElementById("setEmail").value,
+      oldPassword: document.getElementById("setOldPassword").value,
+      newPassword: document.getElementById("setNewPassword").value,
+    };
+
+    const res = await fetch(`/api/user/${currentUserId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyData),
+    });
+
+    const data = await res.json();
+    alert(data.message); // Notifikasi berhasil atau error
+
+    if (data.success) {
+      currentUsername = data.username;
+      currentFullName = document.getElementById("setFullName").value;
+
+      localStorage.setItem("username", currentUsername);
+      localStorage.setItem("fullName", currentFullName);
+
+      document.getElementById("displayUsername").innerText = currentFullName;
+
+      // Kosongkan kolom password setelah sukses
+      document.getElementById("setOldPassword").value = "";
+      document.getElementById("setNewPassword").value = "";
+    }
+  });
+
+// --- LOGIKA TRANSAKSI ---
 document.getElementById("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   await fetch("/api/expenses", {
@@ -298,7 +351,6 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       note: document.getElementById("expNote").value,
     }),
   });
-
   document.getElementById("expenseForm").reset();
   document.getElementById("expDate").value = getLocalYYYYMMDD();
   if (categorySelectInstance) categorySelectInstance.clear();
@@ -365,9 +417,7 @@ function renderChart(dataObj) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: window.innerWidth < 768 ? "bottom" : "right",
-        },
+        legend: { position: window.innerWidth < 768 ? "bottom" : "right" },
       },
       cutout: "75%",
     },

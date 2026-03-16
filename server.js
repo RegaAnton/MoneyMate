@@ -8,29 +8,21 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// --- Definisi File Database ---
 const USERS_FILE = path.join(__dirname, "users.json");
 const CATEGORIES_FILE = path.join(__dirname, "categories.json");
 const EXPENSES_FILE = path.join(__dirname, "expenses.json");
 
-// ==========================================
-// FUNGSI HELPER (ASYNCHRONOUS)
-// ==========================================
-
-// Membaca file JSON secara Asynchronous (Non-blocking)
 const readJson = async (file) => {
   try {
     const data = await fs.readFile(file, "utf8");
     return JSON.parse(data);
   } catch (error) {
-    // Jika file belum ada (error ENOENT) atau kosong, kembalikan array kosong
     if (error.code === "ENOENT") return [];
     console.error(`Gagal membaca ${file}:`, error);
     return [];
   }
 };
 
-// Menulis data ke file JSON secara Asynchronous (Non-blocking)
 const writeJson = async (file, data) => {
   try {
     await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
@@ -39,7 +31,6 @@ const writeJson = async (file, data) => {
   }
 };
 
-// Inisialisasi Database Otomatis saat server berjalan
 const initDB = async () => {
   const files = [USERS_FILE, CATEGORIES_FILE, EXPENSES_FILE];
   for (const file of files) {
@@ -47,24 +38,18 @@ const initDB = async () => {
       await fs.access(file);
     } catch {
       await writeJson(file, []);
-      console.log(`[Init] File ${path.basename(file)} berhasil dibuat.`);
     }
   }
 };
-
-// Jalankan inisialisasi
 initDB();
 
 // ==========================================
-// ROUTES API (Semua diubah menjadi async/await)
+// ROUTES API AUTHENTICATION
 // ==========================================
-
-// --- Auth (Login & Register) ---
 app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const users = await readJson(USERS_FILE); // Pakai 'await'
-
+    const users = await readJson(USERS_FILE);
     const userIndex = users.findIndex((u) => u.username === username);
 
     if (userIndex === -1) {
@@ -75,32 +60,30 @@ app.post("/api/login", async (req, res) => {
 
     const user = users[userIndex];
     let isMatch = false;
-
     const isHashed =
       user.password &&
       user.password.startsWith("$2") &&
       user.password.length === 60;
 
     if (isHashed) {
-      isMatch = await bcrypt.compare(password, user.password); // bcrypt versi async lebih efisien
+      isMatch = await bcrypt.compare(password, user.password);
     } else {
-      // [LAZY MIGRATION]
       isMatch = password === user.password;
-
       if (isMatch) {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(password, salt);
         users[userIndex] = user;
-
-        await writeJson(USERS_FILE, users); // Pakai 'await'
-        console.log(
-          `[Keamanan] Password akun '${username}' berhasil dienkripsi!`,
-        );
+        await writeJson(USERS_FILE, users);
       }
     }
 
     if (isMatch) {
-      res.json({ success: true, userId: user.id, username: user.username });
+      res.json({
+        success: true,
+        userId: user.id,
+        username: user.username,
+        fullName: user.fullName || user.username,
+      });
     } else {
       res
         .status(401)
@@ -109,13 +92,13 @@ app.post("/api/login", async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ success: false, message: "Terjadi kesalahan pada server." });
+      .json({ success: false, message: "Terjadi kesalahan server." });
   }
 });
 
 app.post("/api/register", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { fullName, username, email, password } = req.body; // fullName ditambahkan
     const users = await readJson(USERS_FILE);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -124,13 +107,11 @@ app.post("/api/register", async (req, res) => {
         .status(400)
         .json({ success: false, message: "Format email tidak valid!" });
     }
-
     if (users.find((u) => u.username === username)) {
       return res
         .status(400)
         .json({ success: false, message: "Username sudah terdaftar!" });
     }
-
     if (users.find((u) => u.email === email)) {
       return res
         .status(400)
@@ -142,6 +123,7 @@ app.post("/api/register", async (req, res) => {
 
     const newUser = {
       id: Date.now(),
+      fullName: fullName || username, // Simpan Nama Lengkap
       username,
       email,
       password: hashedPassword,
@@ -154,11 +136,101 @@ app.post("/api/register", async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ success: false, message: "Terjadi kesalahan pada server." });
+      .json({ success: false, message: "Terjadi kesalahan server." });
   }
 });
 
-// --- Categories (Read-Only) ---
+// ==========================================
+// ROUTES API USER (PENGATURAN)
+// ==========================================
+app.get("/api/user/:id", async (req, res) => {
+  try {
+    const users = await readJson(USERS_FILE);
+    const user = users.find((u) => u.id == req.params.id); // Pake == karena id di json bisa number/string
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User tidak ditemukan" });
+
+    // Jangan kirim password ke frontend
+    res.json({
+      success: true,
+      fullName: user.fullName || "",
+      username: user.username,
+      email: user.email,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error mengambil data" });
+  }
+});
+
+app.put("/api/user/:id", async (req, res) => {
+  try {
+    const { fullName, username, email, oldPassword, newPassword } = req.body;
+    const users = await readJson(USERS_FILE);
+    const userIndex = users.findIndex((u) => u.id == req.params.id);
+
+    if (userIndex === -1)
+      return res
+        .status(404)
+        .json({ success: false, message: "User tidak ditemukan" });
+
+    const user = users[userIndex];
+
+    // Cek apakah username/email dipakai orang lain (selain dirinya sendiri)
+    if (users.find((u) => u.username === username && u.id != req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Username sudah dipakai orang lain!",
+      });
+    }
+    if (users.find((u) => u.email === email && u.id != req.params.id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email sudah dipakai orang lain!" });
+    }
+
+    // Logika ubah password
+    if (newPassword) {
+      if (!oldPassword)
+        return res.status(400).json({
+          success: false,
+          message: "Masukkan password lama untuk mengubah password!",
+        });
+
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch)
+        return res
+          .status(400)
+          .json({ success: false, message: "Password lama salah!" });
+
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+    }
+
+    // Update data lainnya
+    user.fullName = fullName;
+    user.username = username;
+    user.email = email;
+
+    users[userIndex] = user;
+    await writeJson(USERS_FILE, users);
+
+    res.json({
+      success: true,
+      message: "Profil berhasil diperbarui!",
+      username: user.username,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Error menyimpan pengaturan" });
+  }
+});
+
+// ==========================================
+// ROUTES API TRANSAKSI & KATEGORI
+// ==========================================
 app.get("/api/categories", async (req, res) => {
   try {
     const categories = await readJson(CATEGORIES_FILE);
@@ -168,7 +240,6 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// --- Expenses CRUD ---
 app.get("/api/expenses/:userId", async (req, res) => {
   try {
     const expenses = await readJson(EXPENSES_FILE);
@@ -181,7 +252,6 @@ app.get("/api/expenses/:userId", async (req, res) => {
 app.post("/api/expenses", async (req, res) => {
   try {
     const expenses = await readJson(EXPENSES_FILE);
-
     const newExp = {
       id: Date.now(),
       userId: req.body.userId,
@@ -190,7 +260,6 @@ app.post("/api/expenses", async (req, res) => {
       date: req.body.date,
       note: req.body.note,
     };
-
     expenses.push(newExp);
     await writeJson(EXPENSES_FILE, expenses);
     res.json(newExp);
@@ -210,8 +279,5 @@ app.delete("/api/expenses/:id", async (req, res) => {
   }
 });
 
-// --- Start Server ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`Server berjalan di port ${PORT} (Asynchronous Mode)`),
-);
+app.listen(PORT, () => console.log(`Server berjalan di port ${PORT}`));
