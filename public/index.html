@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoneyMate - Pencatat Pengeluaran</title>
+
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -16,6 +17,12 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css"
+      rel="stylesheet"
+    />
+
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -58,20 +65,130 @@
         border-bottom: 1px solid var(--bs-border-color);
         padding: 1.25rem 1.5rem;
       }
+
+      /* --- MODERN AUTH UI --- */
       .auth-wrapper {
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #0d6efd 0%, #00d2ff 100%);
+        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
         padding: 1rem;
       }
+      [data-bs-theme="dark"] .auth-wrapper {
+        background: linear-gradient(
+          135deg,
+          #0f2027 0%,
+          #203a43 50%,
+          #2c5364 100%
+        );
+      }
+
       .auth-card {
         width: 100%;
         max-width: 420px;
-        padding: 2.5rem 2rem;
-        border-radius: 16px;
+        padding: 3rem 2.5rem;
+        border-radius: 24px;
+        border: none;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        transition:
+          transform 0.3s ease,
+          opacity 0.3s ease;
       }
+      [data-bs-theme="dark"] .auth-card {
+        background: rgba(30, 30, 30, 0.95);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .auth-icon-wrapper {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, #0d6efd 0%, #00d2ff 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        color: white;
+        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
+        transform: rotate(-5deg);
+      }
+      .auth-icon-wrapper.success-gradient {
+        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+        box-shadow: 0 10px 20px rgba(25, 135, 84, 0.3);
+      }
+      .auth-icon-wrapper i {
+        transform: rotate(5deg);
+      }
+
+      .form-floating .form-control {
+        border-radius: 14px;
+        border: 1.5px solid #dee2e6;
+        background-color: #f8f9fa;
+        transition: all 0.2s;
+      }
+      .form-floating .form-control:focus {
+        background-color: #fff;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+      }
+      [data-bs-theme="dark"] .form-floating .form-control {
+        background-color: #2a2a2a;
+        border-color: #404040;
+        color: #fff;
+      }
+      [data-bs-theme="dark"] .form-floating .form-control:focus {
+        background-color: #1e1e1e;
+        border-color: #0d6efd;
+      }
+
+      .btn-auth {
+        border-radius: 14px;
+        padding: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border: none;
+        transition: all 0.3s ease;
+      }
+      .btn-auth-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+      }
+      .btn-auth-success {
+        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        color: white;
+      }
+      .btn-auth:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        color: white;
+      }
+
+      /* --- TOM SELECT DARK MODE --- */
+      [data-bs-theme="dark"] .ts-control {
+        background-color: #2a2a2a;
+        border-color: #404040;
+        color: #fff;
+      }
+      [data-bs-theme="dark"] .ts-dropdown {
+        background-color: #2a2a2a;
+        border-color: #404040;
+        color: #fff;
+      }
+      [data-bs-theme="dark"] .ts-dropdown .option {
+        color: #adb5bd;
+      }
+      [data-bs-theme="dark"] .ts-dropdown .active {
+        background-color: #0d6efd;
+        color: #fff;
+      }
+      [data-bs-theme="dark"] .ts-control input {
+        color: #fff;
+      }
+
       [data-bs-theme="dark"] body {
         background-color: #121212;
       }
@@ -126,11 +243,11 @@
     <div id="loginView" class="auth-wrapper">
       <div class="card auth-card shadow-lg">
         <div class="card-body text-center p-0">
-          <div class="mb-3 text-primary">
-            <i class="fa-solid fa-wallet fa-3x"></i>
+          <div class="auth-icon-wrapper">
+            <i class="fa-solid fa-wallet fa-2x"></i>
           </div>
-          <h3 class="fw-bold mb-1">MoneyMate</h3>
-          <p class="text-muted mb-4 small">Silakan masuk ke akun Anda</p>
+          <h3 class="fw-bold mb-1">Selamat Datang</h3>
+          <p class="text-muted mb-4 small">Masuk ke akun MoneyMate Anda</p>
           <form id="loginForm">
             <div class="form-floating mb-3">
               <input
@@ -139,7 +256,8 @@
                 class="form-control"
                 placeholder="Username"
                 required
-              /><label>Username</label>
+              />
+              <label><i class="fa-regular fa-user me-2"></i>Username</label>
             </div>
             <div class="form-floating mb-4">
               <input
@@ -148,22 +266,25 @@
                 class="form-control"
                 placeholder="Password"
                 required
-              /><label>Password</label>
+              />
+              <label
+                ><i class="fa-solid fa-lock me-2 text-muted"></i>Password</label
+              >
             </div>
             <button
               type="submit"
-              class="btn btn-primary btn-lg w-100 mb-3 fw-bold"
+              class="btn btn-auth btn-auth-primary w-100 mb-4"
             >
-              Masuk
+              Masuk Sekarang
             </button>
           </form>
-          <div class="text-center mt-3">
+          <div class="text-center">
             <span class="text-muted small">Belum punya akun?</span>
             <a
-              class="text-primary fw-bold small text-decoration-none"
-              style="cursor: pointer"
+              class="text-primary fw-bold small text-decoration-none ms-1"
+              style="cursor: pointer; transition: color 0.2s"
               onclick="toggleAuthView('register')"
-              >Daftar</a
+              >Daftar di sini</a
             >
           </div>
         </div>
@@ -173,11 +294,13 @@
     <div id="registerView" class="auth-wrapper hidden">
       <div class="card auth-card shadow-lg">
         <div class="card-body text-center p-0">
-          <div class="mb-3 text-success">
-            <i class="fa-solid fa-user-plus fa-3x"></i>
+          <div class="auth-icon-wrapper success-gradient">
+            <i class="fa-solid fa-user-plus fa-2x"></i>
           </div>
           <h3 class="fw-bold mb-1">Buat Akun</h3>
-          <p class="text-muted mb-4 small">Daftar untuk mulai mencatat</p>
+          <p class="text-muted mb-4 small">
+            Mulai kelola keuangan Anda hari ini
+          </p>
           <form id="registerForm">
             <div class="form-floating mb-3">
               <input
@@ -186,9 +309,12 @@
                 class="form-control"
                 placeholder="Username"
                 required
-              /><label>Pilih Username</label>
+              />
+              <label
+                ><i class="fa-regular fa-user me-2 text-muted"></i>
+                Username</label
+              >
             </div>
-
             <div class="form-floating mb-3">
               <input
                 type="email"
@@ -196,7 +322,11 @@
                 class="form-control"
                 placeholder="name@example.com"
                 required
-              /><label>Masukkan Email</label>
+              />
+              <label
+                ><i class="fa-regular fa-envelope me-2 text-muted"></i>Alamat
+                Email</label
+              >
             </div>
             <div class="form-floating mb-4">
               <input
@@ -205,22 +335,26 @@
                 class="form-control"
                 placeholder="Password"
                 required
-              /><label>Buat Password</label>
+              />
+              <label
+                ><i class="fa-solid fa-lock me-2 text-muted"></i>Buat
+                Password</label
+              >
             </div>
             <button
               type="submit"
-              class="btn btn-success btn-lg w-100 mb-3 fw-bold"
+              class="btn btn-auth btn-auth-success w-100 mb-4"
             >
-              Daftar
+              Daftar Sekarang
             </button>
           </form>
-          <div class="text-center mt-3">
+          <div class="text-center">
             <span class="text-muted small">Sudah punya akun?</span>
             <a
-              class="text-primary fw-bold small text-decoration-none"
-              style="cursor: pointer"
+              class="text-success fw-bold small text-decoration-none ms-1"
+              style="cursor: pointer; transition: color 0.2s"
               onclick="toggleAuthView('login')"
-              >Masuk</a
+              >Masuk di sini</a
             >
           </div>
         </div>
@@ -404,7 +538,8 @@
                     <div class="mb-3">
                       <label class="form-label text-muted small fw-bold"
                         >Tanggal</label
-                      ><input
+                      >
+                      <input
                         type="date"
                         id="expDate"
                         class="form-control"
@@ -414,7 +549,8 @@
                     <div class="mb-3">
                       <label class="form-label text-muted small fw-bold"
                         >Kategori</label
-                      ><select
+                      >
+                      <select
                         id="expCategory"
                         class="form-select"
                         required
@@ -423,7 +559,8 @@
                     <div class="mb-3">
                       <label class="form-label text-muted small fw-bold"
                         >Jumlah (Rp)</label
-                      ><input
+                      >
+                      <input
                         type="number"
                         id="expAmount"
                         class="form-control"
@@ -434,7 +571,8 @@
                     <div class="mb-4">
                       <label class="form-label text-muted small fw-bold"
                         >Catatan Opsional</label
-                      ><input
+                      >
+                      <input
                         type="text"
                         id="expNote"
                         class="form-control"
@@ -554,8 +692,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
     <script>
+      let categorySelectInstance = null; // Instansi untuk Tom Select
       let currentUserId = localStorage.getItem("userId");
       let currentUsername = localStorage.getItem("username");
       let categories = [];
@@ -689,12 +829,28 @@
 
       function renderCategories() {
         const select = document.getElementById("expCategory");
+
+        // Hancurkan tampilan lama agar tidak dobel saat reload
+        if (categorySelectInstance) {
+          categorySelectInstance.destroy();
+        }
+
         select.innerHTML =
-          '<option value="" disabled selected>Pilih Kategori...</option>';
+          '<option value="" disabled selected>Pilih atau ketik kategori...</option>';
         categories.forEach(
           (cat) =>
             (select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`),
         );
+
+        // Inisialisasi Tom Select
+        categorySelectInstance = new TomSelect("#expCategory", {
+          create: false,
+          placeholder: "Ketik untuk mencari kategori...",
+          sortField: {
+            field: "text",
+            direction: "asc",
+          },
+        });
       }
 
       function handleSort(column) {
@@ -713,6 +869,7 @@
         let filtered = expenses.filter((exp) =>
           isDateInFilter(exp.date, tableFilter, "table"),
         );
+
         filtered.sort((a, b) => {
           let valA = sortColumn === "amount" ? a.amount : a.date;
           let valB = sortColumn === "amount" ? b.amount : b.date;
@@ -722,6 +879,7 @@
           }
           return sortDirection === "asc" ? valA - valB : valB - valA;
         });
+
         document
           .querySelectorAll(".sort-icon")
           .forEach((icon) => (icon.className = "fa-solid fa-sort sort-icon"));
@@ -731,6 +889,7 @@
           "fa-sort",
           sortDirection === "asc" ? "fa-sort-up" : "fa-sort-down",
         );
+
         const totalItems = filtered.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
@@ -739,6 +898,7 @@
           startIndex,
           startIndex + itemsPerPage,
         );
+
         if (paginatedItems.length === 0) {
           tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-5">Belum ada transaksi.</td></tr>`;
         } else {
@@ -823,7 +983,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               username: document.getElementById("regUsername").value,
-              email: document.getElementById("regEmail").value, // <-- Tambahkan baris ini
+              email: document.getElementById("regEmail").value,
               password: document.getElementById("regPassword").value,
             }),
           });
@@ -850,8 +1010,13 @@
               note: document.getElementById("expNote").value,
             }),
           });
+
           document.getElementById("expenseForm").reset();
           document.getElementById("expDate").value = getLocalYYYYMMDD();
+
+          // Reset pilihan Tom Select setelah submit
+          if (categorySelectInstance) categorySelectInstance.clear();
+
           loadData();
         });
 
