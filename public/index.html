@@ -247,6 +247,8 @@
 
       <div class="container pb-5">
         <div id="page-dashboard" class="page-view">
+          <div id="budgetAlertContainer" class="mb-4 hidden"></div>
+
           <div
             class="d-flex justify-content-between align-items-lg-center flex-column flex-lg-row mb-4 gap-3"
           >
@@ -388,10 +390,11 @@
                         >Jumlah (Rp)</label
                       >
                       <input
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
                         id="expAmount"
                         class="form-control"
-                        placeholder="Contoh: 50000"
+                        placeholder="Contoh: 50.000"
                         required
                       />
                     </div>
@@ -562,7 +565,31 @@
                       />
                     </div>
 
-                    <hr class="my-4" />
+                    <hr class="my-4 border-secondary opacity-25" />
+
+                    <h6 class="fw-bold mb-3">
+                      Anggaran Bulanan
+                      <span class="text-muted fw-normal small">(Opsional)</span>
+                    </h6>
+                    <div class="mb-3">
+                      <label class="form-label text-muted small fw-bold"
+                        >Target Maksimal Pengeluaran (Rp)</label
+                      >
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        id="setMonthlyBudget"
+                        class="form-control"
+                        placeholder="Contoh: 3.000.000"
+                      />
+                      <div class="form-text">
+                        Biarkan kosong atau 0 jika tidak ingin menggunakan
+                        peringatan anggaran.
+                      </div>
+                    </div>
+
+                    <hr class="my-4 border-secondary opacity-25" />
+
                     <h6 class="fw-bold mb-3">
                       Ubah Password
                       <span class="text-muted fw-normal small"
@@ -629,11 +656,10 @@
                   type="text"
                   id="adminSearchUser"
                   class="form-control border-start-0 ps-0"
-                  placeholder="   Cari nama/username/email..."
+                  placeholder="Cari nama, username, email..."
                 />
               </div>
             </div>
-
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0 text-nowrap">
                 <thead class="table-light">
@@ -657,6 +683,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <script src="app.js"></script>
+
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

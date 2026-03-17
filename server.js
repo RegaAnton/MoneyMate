@@ -127,6 +127,7 @@ app.post("/api/register", async (req, res) => {
       username,
       email,
       password: hashedPassword,
+      monthlyBudget: 0, // Default anggaran: 0
     };
 
     users.push(newUser);
@@ -156,6 +157,7 @@ app.get("/api/user/:id", async (req, res) => {
       fullName: user.fullName || "",
       username: user.username,
       email: user.email,
+      monthlyBudget: user.monthlyBudget || 0, // Kirim data budget ke frontend
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error mengambil data" });
@@ -164,7 +166,14 @@ app.get("/api/user/:id", async (req, res) => {
 
 app.put("/api/user/:id", async (req, res) => {
   try {
-    const { fullName, username, email, oldPassword, newPassword } = req.body;
+    const {
+      fullName,
+      username,
+      email,
+      oldPassword,
+      newPassword,
+      monthlyBudget,
+    } = req.body;
     const users = await readJson(USERS_FILE);
     const userIndex = users.findIndex((u) => u.id == req.params.id);
 
@@ -206,6 +215,7 @@ app.put("/api/user/:id", async (req, res) => {
     user.fullName = fullName;
     user.username = username;
     user.email = email;
+    user.monthlyBudget = monthlyBudget || 0; // Simpan data budget
 
     users[userIndex] = user;
     await writeJson(USERS_FILE, users);
@@ -225,11 +235,9 @@ app.put("/api/user/:id", async (req, res) => {
 // ==========================================
 // ROUTES API ADMIN KHUSUS
 // ==========================================
-// 1. Mengambil semua data user
 app.get("/api/admin/users", async (req, res) => {
   try {
     const users = await readJson(USERS_FILE);
-    // Kita filter data agar password hash tidak ikut terkirim ke frontend
     const safeUsers = users.map((u) => ({
       id: u.id,
       fullName: u.fullName || "-",
@@ -244,7 +252,6 @@ app.get("/api/admin/users", async (req, res) => {
   }
 });
 
-// 2. Force Reset Password (Tanpa password lama)
 app.put("/api/admin/user/:id/reset-password", async (req, res) => {
   try {
     const { newPassword } = req.body;
@@ -256,7 +263,6 @@ app.put("/api/admin/user/:id/reset-password", async (req, res) => {
         .status(404)
         .json({ success: false, message: "User tidak ditemukan" });
 
-    // Langsung timpa password lamanya dengan hash baru
     const salt = await bcrypt.genSalt(10);
     users[userIndex].password = await bcrypt.hash(newPassword, salt);
 

@@ -2,6 +2,7 @@ let categorySelectInstance = null;
 let currentUserId = localStorage.getItem("userId");
 let currentUsername = localStorage.getItem("username");
 let currentFullName = localStorage.getItem("fullName") || currentUsername;
+let currentBudget = 0;
 let categories = [];
 let expenses = [];
 let dashboardFilter = "bulan";
@@ -13,7 +14,6 @@ const itemsPerPage = 10;
 let sortColumn = "date";
 let sortDirection = "desc";
 
-// Array untuk menyimpan data user di Admin Panel
 let adminUsersList = [];
 
 const themeToggleBtn = document.getElementById("themeToggle");
@@ -76,6 +76,28 @@ function isDateInFilter(dateString, filterType, viewContext) {
   return true;
 }
 
+// --- FUNGSI FORMAT RIBUAN OTOMATIS ---
+function formatRibuan(inputElement) {
+  // Hapus semua karakter selain angka
+  let value = inputElement.value.replace(/\D/g, "");
+  if (value) {
+    // Ubah menjadi angka integer lalu format dengan format Rupiah (titik)
+    inputElement.value = parseInt(value, 10).toLocaleString("id-ID");
+  } else {
+    inputElement.value = "";
+  }
+}
+
+// Pasang event listener untuk format otomatis saat user mengetik
+document.getElementById("expAmount").addEventListener("input", function () {
+  formatRibuan(this);
+});
+document
+  .getElementById("setMonthlyBudget")
+  .addEventListener("input", function () {
+    formatRibuan(this);
+  });
+
 if (currentUserId) {
   document.getElementById("displayUsername").innerText = currentFullName;
   showApp();
@@ -129,14 +151,22 @@ function navigate(page) {
 }
 
 async function loadData() {
-  const [catRes, expRes] = await Promise.all([
+  const [catRes, expRes, userRes] = await Promise.all([
     fetch("/api/categories"),
     fetch(`/api/expenses/${currentUserId}`),
+    fetch(`/api/user/${currentUserId}`),
   ]);
+
   categories = (await catRes.json()).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
   expenses = await expRes.json();
+
+  const userData = await userRes.json();
+  if (userData.success) {
+    currentBudget = userData.monthlyBudget || 0;
+  }
+
   renderCategories();
   renderExpensesTable();
   processDashboard();
@@ -198,6 +228,12 @@ async function loadSettingsData() {
     document.getElementById("setFullName").value = data.fullName;
     document.getElementById("setUsername").value = data.username;
     document.getElementById("setEmail").value = data.email;
+
+    // Tampilkan format ribuan jika ada budget, jika kosong tampilkan string kosong
+    document.getElementById("setMonthlyBudget").value = data.monthlyBudget
+      ? data.monthlyBudget.toLocaleString("id-ID")
+      : "";
+
     document.getElementById("setOldPassword").value = "";
     document.getElementById("setNewPassword").value = "";
   }
@@ -207,10 +243,17 @@ document
   .getElementById("settingsForm")
   .addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    // Hapus format titik sebelum dikirim ke server menjadi tipe data Number yang valid
+    let rawBudgetStr = document
+      .getElementById("setMonthlyBudget")
+      .value.replace(/\./g, "");
+
     const bodyData = {
       fullName: document.getElementById("setFullName").value,
       username: document.getElementById("setUsername").value,
       email: document.getElementById("setEmail").value,
+      monthlyBudget: parseInt(rawBudgetStr) || 0, // Pastikan dikirim sebagai Integer
       oldPassword: document.getElementById("setOldPassword").value,
       newPassword: document.getElementById("setNewPassword").value,
     };
@@ -226,6 +269,8 @@ document
     if (data.success) {
       currentUsername = data.username;
       currentFullName = document.getElementById("setFullName").value;
+      currentBudget = bodyData.monthlyBudget;
+
       localStorage.setItem("username", currentUsername);
       localStorage.setItem("fullName", currentFullName);
       document.getElementById("displayUsername").innerText = currentFullName;
@@ -239,28 +284,23 @@ document
 async function loadAdminUsers() {
   const res = await fetch("/api/admin/users");
   const data = await res.json();
-
   if (data.success) {
-    adminUsersList = data.data; // Simpan data ke variabel global
-    renderAdminUsers(adminUsersList); // Render ke tabel
+    adminUsersList = data.data;
+    renderAdminUsers(adminUsersList);
   } else {
     alert("Gagal memuat data pengguna.");
   }
 }
 
-// Fungsi untuk merender tabel user (Bisa dipanggil ulang saat searching)
 function renderAdminUsers(usersData) {
   const tbody = document.getElementById("adminUserTableBody");
   tbody.innerHTML = "";
-
   if (usersData.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Pengguna tidak ditemukan</td></tr>`;
     return;
   }
-
   usersData.forEach((user) => {
     const actionBtn = `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="forceResetPassword(${user.id}, '${user.username}')"><i class="fa-solid fa-key me-1"></i> Reset Pass</button>`;
-
     tbody.innerHTML += `
       <tr>
         <td class="ps-4 fw-bold text-muted">#${user.id}</td>
@@ -273,18 +313,14 @@ function renderAdminUsers(usersData) {
   });
 }
 
-// Event Listener untuk kolom pencarian Admin
 document.getElementById("adminSearchUser").addEventListener("input", (e) => {
   const keyword = e.target.value.toLowerCase();
-
-  // Filter berdasarkan nama lengkap ATAU username ATAU email
   const filteredUsers = adminUsersList.filter(
     (u) =>
       (u.fullName && u.fullName.toLowerCase().includes(keyword)) ||
       (u.username && u.username.toLowerCase().includes(keyword)) ||
       (u.email && u.email.toLowerCase().includes(keyword)),
   );
-
   renderAdminUsers(filteredUsers);
 });
 
@@ -292,22 +328,18 @@ async function forceResetPassword(userId, username) {
   const newPass = prompt(
     `RESET PASSWORD PAKSA\nMasukkan password BARU untuk pengguna: ${username}`,
   );
-
-  if (newPass === null || newPass.trim() === "") {
-    return;
-  }
+  if (newPass === null || newPass.trim() === "") return;
 
   const res = await fetch(`/api/admin/user/${userId}/reset-password`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ newPassword: newPass }),
   });
-
   const data = await res.json();
   alert(data.message);
 }
 
-// --- LOGIKA TRANSAKSI ---
+// --- LOGIKA TRANSAKSI & BUDGETING ---
 function renderCategories() {
   const select = document.getElementById("expCategory");
   if (categorySelectInstance) categorySelectInstance.destroy();
@@ -420,6 +452,12 @@ function changePage(p) {
 
 document.getElementById("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  // Bersihkan format titik sebelum dikirim agar menjadi Integer
+  let rawAmountStr = document
+    .getElementById("expAmount")
+    .value.replace(/\./g, "");
+
   await fetch("/api/expenses", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -427,10 +465,11 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       userId: currentUserId,
       date: document.getElementById("expDate").value,
       categoryId: document.getElementById("expCategory").value,
-      amount: document.getElementById("expAmount").value,
+      amount: parseInt(rawAmountStr), // Kirim sebagai angka murni
       note: document.getElementById("expNote").value,
     }),
   });
+
   document.getElementById("expenseForm").reset();
   document.getElementById("expDate").value = getLocalYYYYMMDD();
   if (categorySelectInstance) categorySelectInstance.clear();
@@ -441,6 +480,63 @@ async function deleteExpense(id) {
   if (confirm("Hapus data?")) {
     await fetch(`/api/expenses/${id}`, { method: "DELETE" });
     loadData();
+  }
+}
+
+function checkBudgetAlert() {
+  const alertContainer = document.getElementById("budgetAlertContainer");
+  if (!currentBudget || currentBudget <= 0) {
+    alertContainer.classList.add("hidden");
+    return;
+  }
+
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  const monthlyExpenses = expenses.filter((exp) => {
+    const [y, m, d] = exp.date.split("-").map(Number);
+    return y === currentYear && m - 1 === currentMonth;
+  });
+
+  const totalMonthly = monthlyExpenses.reduce(
+    (sum, exp) => sum + exp.amount,
+    0,
+  );
+  const percentage = (totalMonthly / currentBudget) * 100;
+
+  alertContainer.classList.remove("hidden");
+
+  if (percentage >= 100) {
+    alertContainer.innerHTML = `
+      <div class="alert alert-danger d-flex align-items-center shadow-sm mb-0 rounded-4" role="alert">
+        <i class="fa-solid fa-triangle-exclamation fa-2x me-3"></i>
+        <div>
+          <strong class="d-block mb-1">Overbudget!</strong>
+          Pengeluaran bulan ini (Rp ${totalMonthly.toLocaleString("id-ID")}) telah melebihi target anggaran (Rp ${currentBudget.toLocaleString("id-ID")}).
+        </div>
+      </div>
+    `;
+  } else if (percentage >= 80) {
+    alertContainer.innerHTML = `
+      <div class="alert alert-warning d-flex align-items-center shadow-sm mb-0 rounded-4" role="alert">
+        <i class="fa-solid fa-circle-exclamation fa-2x me-3"></i>
+        <div>
+          <strong class="d-block mb-1">Peringatan Anggaran</strong>
+          Pengeluaran mencapai ${percentage.toFixed(1)}% (Rp ${totalMonthly.toLocaleString("id-ID")}) dari target bulan ini.
+        </div>
+      </div>
+    `;
+  } else {
+    alertContainer.innerHTML = `
+      <div class="alert alert-info d-flex align-items-center shadow-sm mb-0 rounded-4" role="alert">
+        <i class="fa-solid fa-bullseye fa-2x me-3"></i>
+        <div>
+          <strong class="d-block mb-1">Status Anggaran: Aman</strong>
+          Sisa anggaran Anda bulan ini adalah Rp ${(currentBudget - totalMonthly).toLocaleString("id-ID")}.
+        </div>
+      </div>
+    `;
   }
 }
 
@@ -459,6 +555,7 @@ function processDashboard() {
   document.getElementById("totalAmount").innerText =
     `Rp ${total.toLocaleString("id-ID")}`;
   renderChart(categoryTotals);
+  checkBudgetAlert();
 }
 
 function renderChart(dataObj) {
