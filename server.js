@@ -98,7 +98,7 @@ app.post("/api/login", async (req, res) => {
 
 app.post("/api/register", async (req, res) => {
   try {
-    const { fullName, username, email, password } = req.body; // fullName ditambahkan
+    const { fullName, username, email, password } = req.body;
     const users = await readJson(USERS_FILE);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -123,7 +123,7 @@ app.post("/api/register", async (req, res) => {
 
     const newUser = {
       id: Date.now(),
-      fullName: fullName || username, // Simpan Nama Lengkap
+      fullName: fullName || username,
       username,
       email,
       password: hashedPassword,
@@ -146,13 +146,11 @@ app.post("/api/register", async (req, res) => {
 app.get("/api/user/:id", async (req, res) => {
   try {
     const users = await readJson(USERS_FILE);
-    const user = users.find((u) => u.id == req.params.id); // Pake == karena id di json bisa number/string
+    const user = users.find((u) => u.id == req.params.id);
     if (!user)
       return res
         .status(404)
         .json({ success: false, message: "User tidak ditemukan" });
-
-    // Jangan kirim password ke frontend
     res.json({
       success: true,
       fullName: user.fullName || "",
@@ -177,7 +175,6 @@ app.put("/api/user/:id", async (req, res) => {
 
     const user = users[userIndex];
 
-    // Cek apakah username/email dipakai orang lain (selain dirinya sendiri)
     if (users.find((u) => u.username === username && u.id != req.params.id)) {
       return res.status(400).json({
         success: false,
@@ -190,14 +187,12 @@ app.put("/api/user/:id", async (req, res) => {
         .json({ success: false, message: "Email sudah dipakai orang lain!" });
     }
 
-    // Logika ubah password
     if (newPassword) {
       if (!oldPassword)
         return res.status(400).json({
           success: false,
           message: "Masukkan password lama untuk mengubah password!",
         });
-
       const isMatch = await bcrypt.compare(oldPassword, user.password);
       if (!isMatch)
         return res
@@ -208,7 +203,6 @@ app.put("/api/user/:id", async (req, res) => {
       user.password = await bcrypt.hash(newPassword, salt);
     }
 
-    // Update data lainnya
     user.fullName = fullName;
     user.username = username;
     user.email = email;
@@ -225,6 +219,56 @@ app.put("/api/user/:id", async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Error menyimpan pengaturan" });
+  }
+});
+
+// ==========================================
+// ROUTES API ADMIN KHUSUS
+// ==========================================
+// 1. Mengambil semua data user
+app.get("/api/admin/users", async (req, res) => {
+  try {
+    const users = await readJson(USERS_FILE);
+    // Kita filter data agar password hash tidak ikut terkirim ke frontend
+    const safeUsers = users.map((u) => ({
+      id: u.id,
+      fullName: u.fullName || "-",
+      username: u.username,
+      email: u.email,
+    }));
+    res.json({ success: true, data: safeUsers });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Gagal mengambil data pengguna." });
+  }
+});
+
+// 2. Force Reset Password (Tanpa password lama)
+app.put("/api/admin/user/:id/reset-password", async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const users = await readJson(USERS_FILE);
+    const userIndex = users.findIndex((u) => u.id == req.params.id);
+
+    if (userIndex === -1)
+      return res
+        .status(404)
+        .json({ success: false, message: "User tidak ditemukan" });
+
+    // Langsung timpa password lamanya dengan hash baru
+    const salt = await bcrypt.genSalt(10);
+    users[userIndex].password = await bcrypt.hash(newPassword, salt);
+
+    await writeJson(USERS_FILE, users);
+    res.json({
+      success: true,
+      message: "Password user berhasil direset paksa!",
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Gagal mereset password." });
   }
 });
 

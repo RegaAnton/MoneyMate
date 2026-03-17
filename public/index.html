@@ -56,12 +56,24 @@
             </div>
             <button
               type="submit"
-              class="btn btn-auth btn-auth-primary w-100 mb-4"
+              class="btn btn-auth btn-auth-primary w-100 mb-3"
             >
               Masuk Sekarang
             </button>
           </form>
-          <div class="text-center">
+
+          <div class="mb-4">
+            <a
+              href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20lupa%20password%20akun%20MoneyMate%20saya.%20Email/Username%20saya%20adalah:%20"
+              target="_blank"
+              class="text-decoration-none small text-muted hover-primary"
+            >
+              <i class="fa-brands fa-whatsapp text-success me-1"></i> Lupa
+              Password? Hubungi Admin
+            </a>
+          </div>
+
+          <div class="text-center border-top pt-3">
             <span class="text-muted small">Belum punya akun?</span>
             <a
               class="text-primary fw-bold small text-decoration-none ms-1"
@@ -144,7 +156,7 @@
               Daftar Sekarang
             </button>
           </form>
-          <div class="text-center">
+          <div class="text-center border-top pt-3">
             <span class="text-muted small">Sudah punya akun?</span>
             <a
               class="text-success fw-bold small text-decoration-none ms-1"
@@ -199,6 +211,14 @@
                   onclick="navigate('settings')"
                   id="nav-settings"
                   ><i class="fa-solid fa-gear me-1"></i> Pengaturan</a
+                >
+              </li>
+              <li class="nav-item hidden" id="navItemAdmin">
+                <a
+                  class="nav-link text-danger"
+                  onclick="navigate('admin')"
+                  id="nav-admin"
+                  ><i class="fa-solid fa-users-gear me-1"></i> Admin Panel</a
                 >
               </li>
             </ul>
@@ -580,6 +600,50 @@
                   </form>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="page-admin" class="page-view hidden">
+          <div
+            class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2"
+          >
+            <h3 class="fw-bold m-0 text-danger">
+              <i class="fa-solid fa-shield-halved me-2"></i>Admin Panel
+            </h3>
+            <span class="badge bg-danger">Hanya Admin</span>
+          </div>
+          <div class="card border-top border-danger border-4">
+            <div
+              class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3"
+            >
+              <h6 class="fw-bold m-0 text-body">Daftar Pengguna MoneyMate</h6>
+              <div class="input-group input-group-sm" style="max-width: 280px">
+                <span class="input-group-text bg-white"
+                  ><i class="fa-solid fa-magnifying-glass text-muted"></i
+                ></span>
+                <input
+                  type="text"
+                  id="adminSearchUser"
+                  class="form-control border-start-0 ps-0"
+                  placeholder="   Cari nama/username/email..."
+                />
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0 text-nowrap">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-4">ID User</th>
+                    <th>Nama Lengkap</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th class="text-end pe-4">Aksi Reset</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUserTableBody"></tbody>
+              </table>
             </div>
           </div>
         </div>

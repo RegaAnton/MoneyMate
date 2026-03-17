@@ -13,6 +13,9 @@ const itemsPerPage = 10;
 let sortColumn = "date";
 let sortDirection = "desc";
 
+// Array untuk menyimpan data user di Admin Panel
+let adminUsersList = [];
+
 const themeToggleBtn = document.getElementById("themeToggle");
 const themeIcon = themeToggleBtn.querySelector("i");
 applyTheme(currentTheme);
@@ -93,6 +96,11 @@ function showApp() {
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("registerView").classList.add("hidden");
   document.getElementById("mainApp").classList.remove("hidden");
+
+  if (currentUsername === "admin") {
+    document.getElementById("navItemAdmin").classList.remove("hidden");
+  }
+
   document.getElementById("expDate").value = getLocalYYYYMMDD();
   loadData();
 }
@@ -110,11 +118,14 @@ function navigate(page) {
     .querySelectorAll(".nav-link")
     .forEach((el) => el.classList.remove("active"));
   document.getElementById(`page-${page}`).classList.remove("hidden");
-  document.getElementById(`nav-${page}`).classList.add("active");
+
+  const navLink = document.getElementById(`nav-${page}`);
+  if (navLink) navLink.classList.add("active");
 
   if (page === "dashboard") processDashboard();
   if (page === "expenses") renderExpensesTable();
-  if (page === "settings") loadSettingsData(); // Panggil fungsi saat buka menu setting
+  if (page === "settings") loadSettingsData();
+  if (page === "admin") loadAdminUsers();
 }
 
 async function loadData() {
@@ -131,6 +142,172 @@ async function loadData() {
   processDashboard();
 }
 
+// --- LOGIKA AUTHENTICATION ---
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: document.getElementById("loginUsername").value,
+      password: document.getElementById("loginPassword").value,
+    }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    localStorage.setItem("userId", data.userId);
+    localStorage.setItem("username", data.username);
+    localStorage.setItem("fullName", data.fullName);
+
+    currentUserId = data.userId;
+    currentUsername = data.username;
+    currentFullName = data.fullName;
+
+    document.getElementById("displayUsername").innerText = currentFullName;
+    showApp();
+  } else alert(data.message);
+});
+
+document
+  .getElementById("registerForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: document.getElementById("regFullName").value,
+        username: document.getElementById("regUsername").value,
+        email: document.getElementById("regEmail").value,
+        password: document.getElementById("regPassword").value,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("Berhasil! Silakan masuk.");
+      toggleAuthView("login");
+      document.getElementById("registerForm").reset();
+    } else alert(data.message);
+  });
+
+// --- LOGIKA PENGATURAN AKUN ---
+async function loadSettingsData() {
+  const res = await fetch(`/api/user/${currentUserId}`);
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById("setFullName").value = data.fullName;
+    document.getElementById("setUsername").value = data.username;
+    document.getElementById("setEmail").value = data.email;
+    document.getElementById("setOldPassword").value = "";
+    document.getElementById("setNewPassword").value = "";
+  }
+}
+
+document
+  .getElementById("settingsForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const bodyData = {
+      fullName: document.getElementById("setFullName").value,
+      username: document.getElementById("setUsername").value,
+      email: document.getElementById("setEmail").value,
+      oldPassword: document.getElementById("setOldPassword").value,
+      newPassword: document.getElementById("setNewPassword").value,
+    };
+
+    const res = await fetch(`/api/user/${currentUserId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyData),
+    });
+    const data = await res.json();
+    alert(data.message);
+
+    if (data.success) {
+      currentUsername = data.username;
+      currentFullName = document.getElementById("setFullName").value;
+      localStorage.setItem("username", currentUsername);
+      localStorage.setItem("fullName", currentFullName);
+      document.getElementById("displayUsername").innerText = currentFullName;
+
+      document.getElementById("setOldPassword").value = "";
+      document.getElementById("setNewPassword").value = "";
+    }
+  });
+
+// --- LOGIKA ADMIN PANEL ---
+async function loadAdminUsers() {
+  const res = await fetch("/api/admin/users");
+  const data = await res.json();
+
+  if (data.success) {
+    adminUsersList = data.data; // Simpan data ke variabel global
+    renderAdminUsers(adminUsersList); // Render ke tabel
+  } else {
+    alert("Gagal memuat data pengguna.");
+  }
+}
+
+// Fungsi untuk merender tabel user (Bisa dipanggil ulang saat searching)
+function renderAdminUsers(usersData) {
+  const tbody = document.getElementById("adminUserTableBody");
+  tbody.innerHTML = "";
+
+  if (usersData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Pengguna tidak ditemukan</td></tr>`;
+    return;
+  }
+
+  usersData.forEach((user) => {
+    const actionBtn = `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="forceResetPassword(${user.id}, '${user.username}')"><i class="fa-solid fa-key me-1"></i> Reset Pass</button>`;
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="ps-4 fw-bold text-muted">#${user.id}</td>
+        <td>${user.fullName}</td>
+        <td><span class="badge bg-secondary-subtle border text-secondary-emphasis">${user.username}</span></td>
+        <td>${user.email}</td>
+        <td class="text-end pe-4">${actionBtn}</td>
+      </tr>
+    `;
+  });
+}
+
+// Event Listener untuk kolom pencarian Admin
+document.getElementById("adminSearchUser").addEventListener("input", (e) => {
+  const keyword = e.target.value.toLowerCase();
+
+  // Filter berdasarkan nama lengkap ATAU username ATAU email
+  const filteredUsers = adminUsersList.filter(
+    (u) =>
+      (u.fullName && u.fullName.toLowerCase().includes(keyword)) ||
+      (u.username && u.username.toLowerCase().includes(keyword)) ||
+      (u.email && u.email.toLowerCase().includes(keyword)),
+  );
+
+  renderAdminUsers(filteredUsers);
+});
+
+async function forceResetPassword(userId, username) {
+  const newPass = prompt(
+    `RESET PASSWORD PAKSA\nMasukkan password BARU untuk pengguna: ${username}`,
+  );
+
+  if (newPass === null || newPass.trim() === "") {
+    return;
+  }
+
+  const res = await fetch(`/api/admin/user/${userId}/reset-password`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ newPassword: newPass }),
+  });
+
+  const data = await res.json();
+  alert(data.message);
+}
+
+// --- LOGIKA TRANSAKSI ---
 function renderCategories() {
   const select = document.getElementById("expCategory");
   if (categorySelectInstance) categorySelectInstance.destroy();
@@ -241,103 +418,6 @@ function changePage(p) {
   renderExpensesTable();
 }
 
-// --- LOGIKA AUTHENTICATION ---
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: document.getElementById("loginUsername").value,
-      password: document.getElementById("loginPassword").value,
-    }),
-  });
-  const data = await res.json();
-  if (data.success) {
-    localStorage.setItem("userId", data.userId);
-    localStorage.setItem("username", data.username);
-    localStorage.setItem("fullName", data.fullName);
-    currentUserId = data.userId;
-    currentUsername = data.username;
-    currentFullName = data.fullName;
-    document.getElementById("displayUsername").innerText = currentFullName;
-    showApp();
-  } else alert(data.message);
-});
-
-document
-  .getElementById("registerForm")
-  .addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fullName: document.getElementById("regFullName").value, // Kirim fullName
-        username: document.getElementById("regUsername").value,
-        email: document.getElementById("regEmail").value,
-        password: document.getElementById("regPassword").value,
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert("Berhasil! Silakan masuk.");
-      toggleAuthView("login");
-      document.getElementById("registerForm").reset();
-    } else alert(data.message);
-  });
-
-// --- LOGIKA PENGATURAN AKUN ---
-async function loadSettingsData() {
-  const res = await fetch(`/api/user/${currentUserId}`);
-  const data = await res.json();
-  if (data.success) {
-    document.getElementById("setFullName").value = data.fullName;
-    document.getElementById("setUsername").value = data.username;
-    document.getElementById("setEmail").value = data.email;
-    document.getElementById("setOldPassword").value = "";
-    document.getElementById("setNewPassword").value = "";
-  }
-}
-
-document
-  .getElementById("settingsForm")
-  .addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const bodyData = {
-      fullName: document.getElementById("setFullName").value,
-      username: document.getElementById("setUsername").value,
-      email: document.getElementById("setEmail").value,
-      oldPassword: document.getElementById("setOldPassword").value,
-      newPassword: document.getElementById("setNewPassword").value,
-    };
-
-    const res = await fetch(`/api/user/${currentUserId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyData),
-    });
-
-    const data = await res.json();
-    alert(data.message); // Notifikasi berhasil atau error
-
-    if (data.success) {
-      currentUsername = data.username;
-      currentFullName = document.getElementById("setFullName").value;
-
-      localStorage.setItem("username", currentUsername);
-      localStorage.setItem("fullName", currentFullName);
-
-      document.getElementById("displayUsername").innerText = currentFullName;
-
-      // Kosongkan kolom password setelah sukses
-      document.getElementById("setOldPassword").value = "";
-      document.getElementById("setNewPassword").value = "";
-    }
-  });
-
-// --- LOGIKA TRANSAKSI ---
 document.getElementById("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   await fetch("/api/expenses", {
