@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+
+# Blokir Google dari halaman privasi pengguna
+Disallow: /dashboard
+Disallow: /expenses
+Disallow: /recurring
+Disallow: /settings
+Disallow: /admin
+
+Sitemap: https://moneymate.my.id
