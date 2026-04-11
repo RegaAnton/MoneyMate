@@ -1,58 +1,110 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 💸 MoneyMate
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> **MoneyMate** adalah aplikasi pencatatan keuangan pribadi (_Personal Expense Tracker_) berbasis web yang dirancang untuk membantu pengguna memantau arus kas, mengatur target pengeluaran, dan menganalisis kebiasaan finansial mereka secara efisien dan intuitif.
 
-## About Laravel
+![MoneyMate Dashboard Preview](image_dashboard.png)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ✨ Fitur Utama
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **📊 Dashboard Interaktif:** Pantau ringkasan keuangan Anda (Hari Ini, Minggu Ini, Bulan Ini, Tahun Ini) dilengkapi dengan grafik distribusi pengeluaran berbasis Chart.js.
+- **📝 Pencatatan Cepat & Mudah:** Catat pengeluaran harian Anda dengan kategori yang bisa disesuaikan, fitur pencarian kategori (_live search_), dan format angka rupiah otomatis.
+- **🎯 Manajemen Target Anggaran:** Atur batas pengeluaran global bulanan atau batas spesifik per kategori (misal: khusus Makanan). Aplikasi akan memberikan peringatan visual jika pengeluaran mendekati atau melebihi target (_Overbudget_).
+- **📂 Filter & Ekspor Data:** Saring riwayat transaksi berdasarkan periode waktu dan kategori, lalu ekspor laporan keuangan Anda dalam format **PDF**.
+- **🔒 Keamanan Akun:** Fitur manajemen profil dan pembaruan _password_ terenkripsi untuk menjaga keamanan data pengguna.
+- **📱 Desain Responsif:** Antarmuka pengguna yang bersih, modern, dan sepenuhnya responsif di perangkat _mobile_ maupun _desktop_.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🛠️ Tech Stack
 
-## Learning Laravel
+Aplikasi ini dibangun menggunakan teknologi modern dan kokoh:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **Framework:** [Laravel 11](https://laravel.com/)
+- **Frontend:** HTML5, CSS3, [Bootstrap 5](https://getbootstrap.com/)
+- **Livewire & Alpine.js:** [Livewire Volt](https://livewire.laravel.com/docs/volt)
+- **Database:** MySQL / PostgreSQL
+- **PDF Generation:** [barryvdh/laravel-dompdf](https://github.com/barryvdh/laravel-dompdf)
+- **Charts:** [Chart.js](https://www.chartjs.org/)
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🚀 Instalasi & Menjalankan Aplikasi Lokal
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Ikuti langkah-langkah berikut untuk menjalankan MoneyMate di mesin lokal Anda.
 
-## Agentic Development
+### Prasyarat
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- MySQL / PostgreSQL
 
-```bash
-composer require laravel/boost --dev
+### Langkah-langkah
 
-php artisan boost:install
-```
+1. **Clone Repositori**
+    ```bash
+    git clone https://github.com/RegaAnton/MoneyMate.git
+    cd moneymate
+    ```
+2. **Install Dependensi PHP**
+    ```bash
+    composer install
+    ```
+3. **Install Dependensi Frontend**
+    ```bash
+    npm install
+    npm run build
+    ```
+4. **Konfigurasi Environment**
+    ```bash
+    cp .env.example .env
+    ```
+    Buka file .env dan atur koneksi database Anda:
+    ```bash
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=moneymate_db
+    DB_USERNAME=root
+    DB_PASSWORD=
+    ```
+5. **Generate Application Key**
+    ```bash
+    php artisan key:generate
+    ```
+6. **Jalankan Migrasi Database**
+    ```bash
+    php artisan migrate
+    ```
+7. **Jalankan Development Server**
+    ```bash
+    php artisan serve
+    ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## 📁 Struktur Database Utama
 
-## Contributing
+- **Users:** Menyimpan kredensial pengguna dan target anggaran bulanan global (monthly_budget).
+- **Categories:** Menyimpan daftar kategori pengeluaran standar (Makanan, Transportasi, dll).
+- **Expenses:** Menyimpan riwayat pencatatan transaksi harian beserta relasi ke users dan categories.
+- **Category_budgets:** Menyimpan pengaturan target anggaran spesifik per kategori yang diatur oleh pengguna.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 🤝 Kontribusi
 
-## Code of Conduct
+Kontribusi selalu diterima! Jika Anda ingin menambahkan fitur, memperbaiki bug, atau meningkatkan dokumentasi, silakan ikuti langkah berikut:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+1. **Fork repositori ini.**
+2. **Buat branch fitur Anda**
+    ```
+    git checkout -b feature/FiturBaru
+    ```
+3. **Commit perubahan Anda**
+    ```
+    git commit -m 'Menambahkan Fitur Baru'
+    ```
+4. **Push ke branch tersebut**
+    ```
+    git push origin feature/FiturBaru
+    ```
+5. **Buat Pull Request.**
 
-## Security Vulnerabilities
+## 📄 Lisensi
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Proyek ini berada di bawah lisensi MIT License. Silakan gunakan dan modifikasi sesuai kebutuhan Anda.
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Dibuat dengan ❤️ oleh _Rega Anton Giapierro_
