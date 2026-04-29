@@ -5,6 +5,21 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\Auth\ForgotPasswordOtpController;
 use Illuminate\Support\Facades\Artisan;
 
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect('/dashboard');
+    }
+    return view('landing');
+});
+
+// Route sementara untuk membersihkan cache di cPanel tanpa CMD
+Route::get('/clear-cache', function () {
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
+    Artisan::call('config:clear');
+    return "Cache berhasil dibersihkan! Silakan kembali ke halaman utama.";
+});
+
 Route::middleware('guest')->group(function () {
     Volt::route('/login', 'auth.login')->name('login');
     Volt::route('/register', 'auth.register')->name('register');
@@ -18,7 +33,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::redirect('/', '/dashboard');
 
     Volt::route('/dashboard', 'dashboard')->name('dashboard');
     Volt::route('/expenses', 'expenses')->name('expenses');
