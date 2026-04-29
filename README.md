@@ -10,6 +10,7 @@
 - **📝 Pencatatan Cepat & Mudah:** Catat pengeluaran harian Anda dengan kategori yang bisa disesuaikan, fitur pencarian kategori (_live search_), dan format angka rupiah otomatis.
 - **🎯 Manajemen Target Anggaran:** Atur batas pengeluaran global bulanan atau batas spesifik per kategori (misal: khusus Makanan). Aplikasi akan memberikan peringatan visual jika pengeluaran mendekati atau melebihi target (_Overbudget_).
 - **📂 Filter & Ekspor Data:** Saring riwayat transaksi berdasarkan periode waktu dan kategori, lalu ekspor laporan keuangan Anda dalam format **PDF**.
+- **🔑 Fitur Lupa Password OTP:** Sistem pemulihan akun yang aman menggunakan kode OTP (One-Time Password) yang dikirimkan langsung ke email pengguna.
 - **🔒 Keamanan Akun:** Fitur manajemen profil dan pembaruan _password_ terenkripsi untuk menjaga keamanan data pengguna.
 - **📱 Desain Responsif:** Antarmuka pengguna yang bersih, modern, dan sepenuhnya responsif di perangkat _mobile_ maupun _desktop_.
 

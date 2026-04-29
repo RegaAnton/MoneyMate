@@ -55,10 +55,10 @@ new #[Layout('components.layouts.app')] class extends Component {
                 </button>
             </form>
 
-            <div class="mb-4">
-                <a href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20lupa%20password..." target="_blank"
-                    class="text-decoration-none small text-muted hover-primary">
-                    <i class="fa-brands fa-whatsapp text-success me-1"></i> Lupa Password? Hubungi Admin
+            <div class="mb-2">
+                <a href="{{ route('password.request') }}" wire:navigate
+                    class="text-decoration-none small text-primary fw-bold hover-primary">
+                    <i class="fa-solid fa-key me-1"></i> Lupa Password?
                 </a>
             </div>
 
