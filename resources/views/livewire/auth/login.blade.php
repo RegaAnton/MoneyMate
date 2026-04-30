@@ -5,22 +5,24 @@ use Livewire\Volt\Component;
 use Livewire\Attributes\Layout;
 
 new #[Layout('components.layouts.app')] class extends Component {
-    public string $username = '';
+    public string $loginField = '';
     public string $password = '';
 
     public function login()
     {
         $this->validate([
-            'username' => 'required',
+            'loginField' => 'required',
             'password' => 'required',
         ]);
 
-        if (Auth::attempt(['username' => $this->username, 'password' => $this->password])) {
+        $fieldType = filter_var($this->loginField, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        if (Auth::attempt([$fieldType => $this->loginField, 'password' => $this->password])) {
             session()->regenerate();
             return redirect()->route('dashboard');
         }
 
-        $this->addError('username', 'Username atau password salah.');
+        $this->addError('loginField', 'Username/Email atau password salah.');
     }
 }; ?>
 
@@ -35,15 +37,15 @@ new #[Layout('components.layouts.app')] class extends Component {
 
             <form wire:submit.prevent="login">
                 <div class="form-floating mb-3">
-                    <input type="text" wire:model="username"
-                        class="form-control @error('username') is-invalid @enderror" placeholder="Username" />
-                    <label><i class="fa-regular fa-user me-2"></i>Username</label>
+                    <input type="text" wire:model="loginField"
+                        class="form-control @error('loginField') is-invalid @enderror" placeholder="Username atau Email" />
+                    <label><i class="fa-regular fa-user me-2"></i>Username atau Email</label>
                 </div>
                 <div class="form-floating mb-3">
                     <input type="password" wire:model="password"
-                        class="form-control @error('username') is-invalid @enderror" placeholder="Password" />
+                        class="form-control @error('loginField') is-invalid @enderror" placeholder="Password" />
                     <label><i class="fa-solid fa-lock me-2 text-muted"></i>Password</label>
-                    @error('username')
+                    @error('loginField')
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
                 </div>
