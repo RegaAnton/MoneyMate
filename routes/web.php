@@ -12,6 +12,17 @@ Route::get('/', function () {
     return view('landing');
 });
 
+// Route untuk artikel blog SEO (Dinamis)
+Route::get('/artikel/{slug}', function ($slug) {
+    // Memeriksa apakah file view artikel ada
+    if (view()->exists('articles.' . $slug)) {
+        return view('articles.' . $slug);
+    }
+    abort(404);
+})->name('artikel.show');
+
+
+
 // Route sementara untuk membersihkan cache di cPanel tanpa CMD
 Route::get('/clear-cache', function () {
     Artisan::call('route:clear');

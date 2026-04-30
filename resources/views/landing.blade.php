@@ -213,6 +213,46 @@
             </div>
         </section>
     </main>
+    <!-- Footer Section -->
+    <footer class="bg-gray-50 border-t border-gray-200 pt-16 pb-12 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
+                <!-- Brand Info -->
+                <div class="col-span-1 md:col-span-2">
+                    <a href="/" class="flex items-center gap-3 group mb-4">
+                        <img src="{{ asset('icon-192.png') }}" alt="MoneyMate Logo" class="w-8 h-8 rounded-lg">
+                        <span class="text-xl font-bold tracking-tight text-gray-900">MoneyMate</span>
+                    </a>
+                    <p class="text-gray-500 text-sm leading-relaxed max-w-sm">
+                        Aplikasi pelacak keuangan pribadi cerdas untuk membantu Anda menguasai keuangan tanpa stres. Lacak, atur anggaran, dan capai tujuan finansial Anda secara efisien.
+                    </p>
+                </div>
+
+                <!-- Tautan Navigasi -->
+                <div class="flex flex-col">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-6">Navigasi</h3>
+                    <ul class="space-y-4">
+                        <li><a href="#features" class="text-gray-500 hover:text-blue-600 text-sm transition-colors">Fitur</a></li>
+                        <li><a href="{{ route('login') }}" class="text-gray-500 hover:text-blue-600 text-sm transition-colors">Masuk</a></li>
+                        <li><a href="{{ route('register') }}" class="text-gray-500 hover:text-blue-600 text-sm transition-colors font-semibold">Mulai Gratis</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-gray-400 text-sm">
+                    &copy; {{ date('Y') }} MoneyMate. Hak Cipta Dilindungi.
+                </p>
+                <div class="flex items-center gap-6">
+                    <a href="{{ url('/sitemap.xml') }}" target="_blank" class="text-gray-400 hover:text-gray-600 text-xs font-medium uppercase tracking-widest transition-colors flex items-center gap-1">
+                        Sitemap XML
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
