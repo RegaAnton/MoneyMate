@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 
 new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class extends Component {
     public string $filter = 'bulan';
+    public $startDate, $endDate;
     public array $chartData = [];
 
     public function mount()
@@ -20,6 +21,13 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
     public function setFilter($val)
     {
         $this->filter = $val;
+        if ($val !== 'custom') {
+            $this->generateChart();
+        }
+    }
+
+    public function applyCustomFilter()
+    {
         $this->generateChart();
     }
 
@@ -36,6 +44,8 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
             $query->whereMonth('date', Carbon::now($tz)->month)->whereYear('date', Carbon::now($tz)->year);
         } elseif ($this->filter === 'ytd') {
             $query->whereYear('date', Carbon::now($tz)->year);
+        } elseif ($this->filter === 'custom' && $this->startDate && $this->endDate) {
+            $query->whereBetween('date', [$this->startDate, $this->endDate]);
         }
 
         $expenses = $query->get();
@@ -69,22 +79,19 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
             $query->whereMonth('date', Carbon::now($tz)->month)->whereYear('date', Carbon::now($tz)->year);
         } elseif ($this->filter === 'ytd') {
             $query->whereYear('date', Carbon::now($tz)->year);
+        } elseif ($this->filter === 'custom' && $this->startDate && $this->endDate) {
+            $query->whereBetween('date', [$this->startDate, $this->endDate]);
         }
 
         $totalAmount = $query->sum('amount');
 
-        $currentMonthExpenses = Expense::where('user_id', $user->id)
-            ->whereMonth('date', Carbon::now($tz)->month)
-            ->whereYear('date', Carbon::now($tz)->year)
-            ->sum('amount');
+        $currentMonthExpenses = $totalAmount;
 
         $budget = $user->monthly_budget;
         $budgetPercentage = $budget > 0 ? ($currentMonthExpenses / $budget) * 100 : 0;
 
-        // Query Target Kategori
-        $monthlyExpensesByCategory = Expense::where('user_id', $user->id)
-            ->whereMonth('date', Carbon::now($tz)->month)
-            ->whereYear('date', Carbon::now($tz)->year)
+        // Query Target Kategori (mengikuti filter yang dipilih)
+        $monthlyExpensesByCategory = (clone $query)
             ->selectRaw('category_id, sum(amount) as total')
             ->groupBy('category_id')
             ->pluck('total', 'category_id');
@@ -133,30 +140,119 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
         }
     </style>
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <style>
+        .premium-card {
+            background: rgba(var(--bs-body-bg-rgb), 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(var(--bs-border-color-rgb), 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .premium-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+        }
+
+        .filter-pill-container {
+            background: var(--bs-tertiary-bg);
+            border: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+            padding: 4px;
+            border-radius: 50px;
+            display: inline-flex;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .filter-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--bs-body-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: var(--bs-primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.3);
+            font-weight: 700;
+        }
+
+        .custom-range-card {
+            background: var(--bs-body-bg);
+            border: 1px dashed var(--bs-primary);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-premium-gradient {
+            background: linear-gradient(135deg, var(--bs-primary), #6f42c1);
+            border: none;
+            color: white;
+        }
+    </style>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 animate__animated animate__fadeInDown">
         <div>
-            <h4 class="fw-bold m-0 text-body">Ringkasan Keuangan</h4>
-            <p class="text-muted small m-0 mt-1">Pantau arus kas Anda dengan mudah.</p>
+            <h4 class="fw-bold m-0 text-body display-6" style="font-size: 1.75rem;">Ringkasan Keuangan</h4>
+            <p class="text-muted small m-0 mt-1">Pantau arus kas Anda dengan intelijen visual.</p>
         </div>
-        <div class="bg-body-tertiary p-1 rounded-pill d-inline-flex border shadow-sm">
-            <button wire:click="setFilter('hari')"
-                class="btn btn-sm rounded-pill {{ $filter == 'hari' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none' }} px-3 transition-all">Hari</button>
-            <button wire:click="setFilter('minggu')"
-                class="btn btn-sm rounded-pill {{ $filter == 'minggu' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none' }} px-3 transition-all">Minggu</button>
-            <button wire:click="setFilter('bulan')"
-                class="btn btn-sm rounded-pill {{ $filter == 'bulan' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none' }} px-3 transition-all">Bulan</button>
-            <button wire:click="setFilter('ytd')"
-                class="btn btn-sm rounded-pill {{ $filter == 'ytd' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none' }} px-3 transition-all">Tahun</button>
+        <div class="filter-pill-container hide-scrollbar overflow-auto">
+            @foreach(['hari' => 'Hari', 'minggu' => 'Minggu', 'bulan' => 'Bulan', 'ytd' => 'Tahun', 'custom' => 'Kustom'] as $key => $label)
+                <button wire:click="setFilter('{{ $key }}')"
+                    class="filter-btn {{ $filter == $key ? 'active' : '' }}">
+                    {{ $label }}
+                </button>
+            @endforeach
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+    @if ($filter === 'custom')
+        <div class="custom-range-card animate__animated animate__fadeIn">
+            <div class="row g-3 align-items-end">
+                <div class="col-6 col-md-4">
+                    <label class="form-label text-muted small fw-bold">Tanggal Mulai</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body-tertiary border-0 rounded-start-3"><i class="fa-regular fa-calendar-plus text-primary"></i></span>
+                        <input type="date" wire:model="startDate" class="form-control border-0 bg-body-tertiary rounded-end-3">
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <label class="form-label text-muted small fw-bold">Tanggal Selesai</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body-tertiary border-0 rounded-start-3"><i class="fa-regular fa-calendar-minus text-danger"></i></span>
+                        <input type="date" wire:model="endDate" class="form-control border-0 bg-body-tertiary rounded-end-3">
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 mt-md-0">
+                    <button wire:click="applyCustomFilter" class="btn btn-sm btn-premium-gradient w-100 rounded-pill py-2 shadow-sm">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i> Terapkan Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden premium-card animate__animated animate__zoomIn">
         <div class="card-body p-4 p-md-5 position-relative">
             <div class="position-relative z-1 text-center text-md-start">
                 <span
                     class="badge bg-primary-subtle text-primary fw-medium px-3 py-2 rounded-pill mb-3 border border-primary-subtle">
                     <i class="fa-regular fa-calendar me-1"></i>
-                    {{ ['hari' => 'Hari Ini', 'minggu' => 'Minggu Ini', 'bulan' => 'Bulan Ini', 'ytd' => 'Tahun Ini'][$filter] }}
+                    {{ ['hari' => 'Hari Ini', 'minggu' => 'Minggu Ini', 'bulan' => 'Bulan Ini', 'ytd' => 'Tahun Ini', 'custom' => 'Rentang Kustom'][$filter] }}
+                    @if ($filter === 'custom' && $startDate && $endDate)
+                        <span class="ms-1 opacity-75">({{ \Carbon\Carbon::parse($startDate)->format('d/m/y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/y') }})</span>
+                    @endif
                 </span>
 
                 <div wire:loading.class="d-none" wire:target="setFilter">
@@ -174,7 +270,7 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
 
     <div class="row mb-4">
         <div class="col-lg-5 mb-4 mb-lg-0">
-            <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 premium-card animate__animated animate__fadeInLeft">
                 <div class="card-body p-4 d-flex flex-column">
                     <h6 class="fw-bold text-body mb-4">Distribusi Pengeluaran</h6>
                     <div class="chart-container flex-grow-1 d-flex align-items-center justify-content-center"
@@ -186,7 +282,7 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
         </div>
 
         <div class="col-lg-7">
-            <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 premium-card animate__animated animate__fadeInRight">
                 <div class="card-body p-4">
                     <h6 class="fw-bold text-body mb-4">Rincian Kategori</h6>
 
@@ -249,33 +345,33 @@ new #[Layout('components.layouts.app')] #[Title('Dashboard - MoneyMate')] class 
     </div>
 
     @if ($budget > 0 || $categoryBudgets->count() > 0)
-        <div class="mt-2">
-            <h5 class="fw-bold mb-3 text-body">Status Target Bulanan</h5>
+        <div class="mt-2 animate__animated animate__fadeInUp">
+            <h5 class="fw-bold mb-3 text-body">Status Anggaran ({{ ['hari' => 'Hari Ini', 'minggu' => 'Minggu Ini', 'bulan' => 'Bulan Ini', 'ytd' => 'Tahun Ini', 'custom' => 'Periode Kustom'][$filter] }})</h5>
 
             @if ($budget > 0)
                 @if ($budgetPercentage >= 100)
                     <div class="alert alert-danger d-flex align-items-center shadow-sm mb-4 rounded-4 border-0">
                         <i class="fa-solid fa-triangle-exclamation fa-2x me-3"></i>
                         <div>
-                            <strong class="d-block mb-1">Overbudget Global!</strong>
-                            Pengeluaran bulan ini (Rp {{ number_format($currentMonthExpenses, 0, ',', '.') }}) melebihi
-                            target anggaran keseluruhan (Rp {{ number_format($budget, 0, ',', '.') }}).
+                            <strong class="d-block mb-1">Overbudget!</strong>
+                            Pengeluaran periode ini (Rp {{ number_format($currentMonthExpenses, 0, ',', '.') }}) melebihi
+                            anggaran (Rp {{ number_format($budget, 0, ',', '.') }}).
                         </div>
                     </div>
                 @elseif($budgetPercentage >= 80)
                     <div class="alert alert-warning d-flex align-items-center shadow-sm mb-4 rounded-4 border-0">
                         <i class="fa-solid fa-circle-exclamation fa-2x me-3"></i>
                         <div>
-                            <strong class="d-block mb-1">Peringatan Anggaran Global</strong>
-                            Pengeluaran mencapai {{ number_format($budgetPercentage, 1) }}% dari target bulan ini.
+                            <strong class="d-block mb-1">Peringatan Anggaran</strong>
+                            Pengeluaran mencapai {{ number_format($budgetPercentage, 1) }}% dari target periode ini.
                         </div>
                     </div>
                 @else
                     <div class="alert alert-info d-flex align-items-center shadow-sm mb-4 rounded-4 border-0">
                         <i class="fa-solid fa-bullseye fa-2x me-3"></i>
                         <div>
-                            <strong class="d-block mb-1">Status Anggaran Global: Aman</strong>
-                            Sisa anggaran Anda bulan ini Rp
+                            <strong class="d-block mb-1">Status Anggaran: Aman</strong>
+                            Sisa anggaran Anda untuk periode ini adalah Rp
                             {{ number_format($budget - $currentMonthExpenses, 0, ',', '.') }}.
                         </div>
                     </div>

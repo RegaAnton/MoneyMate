@@ -14,6 +14,7 @@ new #[Layout('components.layouts.app')] class extends Component {
 
     public $date, $category_id, $amount, $note;
     public string $filter = 'bulan';
+    public $startDate, $endDate;
     public string $sortDir = 'desc';
 
     public $filterCategory = '';
@@ -32,6 +33,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function setFilter($val)
     {
         $this->filter = $val;
+        $this->resetPage();
+    }
+
+    public function applyCustomFilter()
+    {
         $this->resetPage();
     }
 
@@ -96,6 +102,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             $query->whereMonth('date', Carbon::now($tz)->month)->whereYear('date', Carbon::now($tz)->year);
         } elseif ($this->filter === 'ytd') {
             $query->whereYear('date', Carbon::now($tz)->year);
+        } elseif ($this->filter === 'custom' && $this->startDate && $this->endDate) {
+            $query->whereBetween('date', [$this->startDate, $this->endDate]);
         }
 
         if ($this->filterCategory !== '') {
@@ -126,6 +134,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             $text = 'Periode ' . $bulanIndo[$now->month - 1] . $now->format(' Y');
         } elseif ($this->filter === 'ytd') {
             $text = 'Periode tahun ' . $now->format('Y');
+        } elseif ($this->filter === 'custom' && $this->startDate && $this->endDate) {
+            $text = 'Periode ' . Carbon::parse($this->startDate)->format('d/m/Y') . ' - ' . Carbon::parse($this->endDate)->format('d/m/Y');
         }
 
         if ($this->filterCategory !== '') {
@@ -148,7 +158,11 @@ new #[Layout('components.layouts.app')] class extends Component {
     {
         $expenses = $this->getFilteredQuery()->get();
         $total = $expenses->sum('amount');
-        $pdf = Pdf::loadView('exports.pdf', ['expenses' => $expenses, 'total' => $total, 'periodeText' => $this->getPeriodeText()]);
+        $pdf = Pdf::loadView('exports.pdf', [
+            'expenses' => $expenses,
+            'total' => $total,
+            'periodeText' => $this->getPeriodeText()
+        ]);
         $filename = 'Laporan_MoneyMate_' . now('Asia/Jakarta')->format('Ymd_His') . '.pdf';
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->output();
@@ -157,18 +171,96 @@ new #[Layout('components.layouts.app')] class extends Component {
 }; ?>
 
 <div>
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <style>
+        .premium-card {
+            background: rgba(var(--bs-body-bg-rgb), 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(var(--bs-border-color-rgb), 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .premium-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+        }
+
+        .filter-pill-container {
+            background: var(--bs-tertiary-bg);
+            border: 1px solid rgba(var(--bs-border-color-rgb), 0.5);
+            padding: 4px;
+            border-radius: 50px;
+            display: inline-flex;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .filter-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--bs-body-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: var(--bs-primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.3);
+            font-weight: 700;
+        }
+
+        .custom-range-card {
+            background: var(--bs-body-bg);
+            border: 1px dashed var(--bs-primary);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-premium-gradient {
+            background: linear-gradient(135deg, var(--bs-primary), #6f42c1);
+            border: none;
+            color: white;
+        }
+
+        .btn-premium-gradient:hover {
+            filter: brightness(1.1);
+            color: white;
+            transform: scale(1.02);
+        }
+    </style>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 animate__animated animate__fadeInDown">
         <div>
-            <h4 class="fw-bold m-0 text-body">Pencatatan Transaksi</h4>
-            <p class="text-muted small m-0 mt-1">Catat dan kelola pengeluaran Anda.</p>
+            <h4 class="fw-bold m-0 text-body display-6" style="font-size: 1.75rem;">Kelola Keuangan</h4>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">
+                    <i class="fa-solid fa-receipt me-1"></i> Transaksi
+                </span>
+                <p class="text-muted small m-0">Catat dan pantau pengeluaran Anda dengan presisi.</p>
+            </div>
         </div>
     </div>
 
     <div class="row">
         <div class="col-lg-4 mb-4">
-            <div class="card border-0 shadow-sm rounded-4">
+            <div class="card border-0 shadow-sm rounded-4 premium-card animate__animated animate__fadeInLeft">
                 <div class="card-body p-4">
-                    <h6 class="fw-bold text-body mb-4">Catat Pengeluaran</h6>
+                    <div class="d-flex align-items-center gap-2 mb-4">
+                        <div class="bg-primary bg-opacity-10 p-2 rounded-3">
+                            <i class="fa-solid fa-pen-to-square text-primary"></i>
+                        </div>
+                        <h6 class="fw-bold text-body m-0">Input Transaksi</h6>
+                    </div>
                     <form wire:submit.prevent="save">
 
                         <div class="mb-3">
@@ -234,7 +326,7 @@ new #[Layout('components.layouts.app')] class extends Component {
         </div>
 
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4">
+            <div class="card border-0 shadow-sm rounded-4 premium-card animate__animated animate__fadeInRight">
 
                 <div class="card-header bg-transparent border-0 p-4 pb-2">
                     <h6 class="fw-bold m-0 text-body">Riwayat Transaksi</h6>
@@ -242,45 +334,65 @@ new #[Layout('components.layouts.app')] class extends Component {
 
                 <div class="card-body p-4 pt-2">
 
-                    <div
-                        class="p-3 mb-4 bg-body-tertiary border shadow-sm rounded-4 d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
-
-                        <div class="bg-body p-1 rounded-pill d-flex border shadow-sm w-100 w-lg-auto overflow-auto hide-scrollbar"
-                            style="flex-wrap: nowrap;">
-                            <button wire:click="setFilter('hari')"
-                                class="btn rounded-pill flex-fill text-nowrap px-2 px-md-3 {{ $filter == 'hari' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none fw-medium opacity-75' }} transition-all"
-                                style="font-size: 0.875rem; padding-top: 0.4rem; padding-bottom: 0.4rem;">Hari</button>
-                            <button wire:click="setFilter('minggu')"
-                                class="btn rounded-pill flex-fill text-nowrap px-2 px-md-3 {{ $filter == 'minggu' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none fw-medium opacity-75' }} transition-all"
-                                style="font-size: 0.875rem; padding-top: 0.4rem; padding-bottom: 0.4rem;">Minggu</button>
-                            <button wire:click="setFilter('bulan')"
-                                class="btn rounded-pill flex-fill text-nowrap px-2 px-md-3 {{ $filter == 'bulan' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none fw-medium opacity-75' }} transition-all"
-                                style="font-size: 0.875rem; padding-top: 0.4rem; padding-bottom: 0.4rem;">Bulan</button>
-                            <button wire:click="setFilter('ytd')"
-                                class="btn rounded-pill flex-fill text-nowrap px-2 px-md-3 {{ $filter == 'ytd' ? 'btn-primary shadow-sm fw-bold' : 'btn-link text-body text-decoration-none fw-medium opacity-75' }} transition-all"
-                                style="font-size: 0.875rem; padding-top: 0.4rem; padding-bottom: 0.4rem;">Tahun</button>
-                        </div>
-
-                        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-lg-auto align-items-stretch">
-                            <select wire:model.live="filterCategory"
-                                class="form-select rounded-pill border shadow-sm px-4 bg-body text-body fw-medium"
-                                style="font-size: 0.875rem; min-height: 40px; cursor: pointer;">
-                                <option value="">Semua Kategori</option>
-                                @foreach ($categories as $cat)
-                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                    <!-- Filter Section -->
+                    <div class="mb-4">
+                        <div class="d-flex flex-column flex-md-row gap-3 justify-content-between align-items-md-center">
+                            <!-- Time Pills -->
+                            <div class="filter-pill-container hide-scrollbar overflow-auto">
+                                @foreach(['hari' => 'Hari', 'minggu' => 'Minggu', 'bulan' => 'Bulan', 'ytd' => 'Tahun', 'custom' => 'Kustom'] as $key => $label)
+                                    <button wire:click="setFilter('{{ $key }}')"
+                                        class="filter-btn {{ $filter == $key ? 'active' : '' }}">
+                                        {{ $label }}
+                                    </button>
                                 @endforeach
-                            </select>
+                            </div>
 
-                            <button wire:click="exportPDF"
-                                class="btn btn-danger rounded-pill fw-bold px-4 shadow-sm transition-all text-nowrap d-flex align-items-center justify-content-center"
-                                style="font-size: 0.875rem; min-height: 40px;">
-                                <span wire:loading.remove wire:target="exportPDF"><i
-                                        class="fa-solid fa-file-pdf me-2"></i> Ekspor PDF</span>
-                                <span wire:loading wire:target="exportPDF"><i
-                                        class="fa-solid fa-spinner fa-spin me-2"></i> Ekspor...</span>
-                            </button>
+                            <!-- Category & Export -->
+                            <div class="d-flex gap-2">
+                                <select wire:model.live="filterCategory"
+                                    class="form-select rounded-pill border shadow-sm px-4 bg-body text-body fw-medium"
+                                    style="font-size: 0.875rem; min-height: 40px; min-width: 160px; cursor: pointer;">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach ($categories as $cat)
+                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                    @endforeach
+                                </select>
+
+                                <button wire:click="exportPDF"
+                                    class="btn btn-danger rounded-pill fw-bold px-4 shadow-sm transition-all text-nowrap d-flex align-items-center justify-content-center"
+                                    style="font-size: 0.875rem; min-height: 40px;">
+                                    <span wire:loading.remove wire:target="exportPDF"><i class="fa-solid fa-file-pdf me-2"></i> PDF</span>
+                                    <span wire:loading wire:target="exportPDF"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                                </button>
+                            </div>
                         </div>
 
+                        <!-- Custom Range Picker (Visible only when 'custom' filter is active) -->
+                        @if ($filter === 'custom')
+                            <div class="custom-range-card mt-3">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label text-muted small fw-bold">Tanggal Mulai</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-body-tertiary border-0 rounded-start-3"><i class="fa-regular fa-calendar-plus text-primary"></i></span>
+                                            <input type="date" wire:model="startDate" class="form-control border-0 bg-body-tertiary rounded-end-3">
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label text-muted small fw-bold">Tanggal Selesai</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-body-tertiary border-0 rounded-start-3"><i class="fa-regular fa-calendar-minus text-danger"></i></span>
+                                            <input type="date" wire:model="endDate" class="form-control border-0 bg-body-tertiary rounded-end-3">
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4 mt-md-0">
+                                        <button wire:click="applyCustomFilter" class="btn btn-sm btn-premium-gradient w-100 rounded-pill py-2 shadow-sm">
+                                            <i class="fa-solid fa-magnifying-glass me-2"></i> Terapkan Filter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="table-responsive hide-scrollbar border rounded-4">

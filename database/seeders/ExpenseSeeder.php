@@ -22,13 +22,13 @@ class ExpenseSeeder extends Seeder
             return;
         }
 
-        $startDate = Carbon::create(2026, 4, 1);
-        $endDate = Carbon::create(2026, 4, 30);
+        $startDate = Carbon::create(2026, 5, 1);
+        $endDate = Carbon::create(2026, 5, 31);
 
         while ($startDate->lte($endDate)) {
             // Create at least 1-3 expenses per day
             $count = rand(1, 3);
-            
+
             for ($i = 0; $i < $count; $i++) {
                 Expense::factory()->create([
                     'user_id' => $user->id,
@@ -37,7 +37,7 @@ class ExpenseSeeder extends Seeder
                     'amount' => rand(10000, 500000),
                 ]);
             }
-            
+
             $startDate->addDay();
         }
     }
