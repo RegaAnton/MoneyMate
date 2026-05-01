@@ -139,7 +139,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <script>
+    <script data-navigate-once>
         // Logika Mode Malam & Toast
         window.formatRibuan = function(input) {
             let v = input.value.replace(/\D/g, "");
@@ -186,30 +186,39 @@
         window.addEventListener('show-toast', e => showToast(e.detail.message, e.detail.icon || 'success'));
 
         // --- FITUR: LOGIKA BANNER INSTALL PWA ---
-        let deferredPrompt;
-        const pwaBanner = document.getElementById('pwa-install-banner');
+        window.deferredPrompt = window.deferredPrompt || null;
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            deferredPrompt = e;
+            window.deferredPrompt = e;
+            const pwaBanner = document.getElementById('pwa-install-banner');
             // Banner hanya muncul di tampilan HP
-            if (window.innerWidth <= 768) {
+            if (pwaBanner && window.innerWidth <= 768) {
                 pwaBanner.classList.remove('d-none');
             }
         });
 
-        document.getElementById('pwa-install-btn').addEventListener('click', async () => {
-            pwaBanner.classList.add('d-none');
-            deferredPrompt.prompt();
-            const {
-                outcome
-            } = await deferredPrompt.userChoice;
-            console.log(`PWA Install: ${outcome}`);
-            deferredPrompt = null;
-        });
+        // Menggunakan event delegation agar tetap berfungsi setelah navigasi Livewire
+        document.addEventListener('click', async (e) => {
+            const installBtn = e.target.closest('#pwa-install-btn');
+            const closeBtn = e.target.closest('#pwa-close-btn');
 
-        document.getElementById('pwa-close-btn').addEventListener('click', () => {
-            pwaBanner.classList.add('d-none');
+            if (installBtn) {
+                const pwaBanner = document.getElementById('pwa-install-banner');
+                if (pwaBanner) pwaBanner.classList.add('d-none');
+                
+                if (window.deferredPrompt) {
+                    window.deferredPrompt.prompt();
+                    const { outcome } = await window.deferredPrompt.userChoice;
+                    console.log(`PWA Install: ${outcome}`);
+                    window.deferredPrompt = null;
+                }
+            }
+
+            if (closeBtn) {
+                const pwaBanner = document.getElementById('pwa-install-banner');
+                if (pwaBanner) pwaBanner.classList.add('d-none');
+            }
         });
 
         // --- REGISTRASI SW (Murni Caching) ---

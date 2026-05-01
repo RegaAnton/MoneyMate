@@ -37,7 +37,7 @@ self.addEventListener("fetch", (event) => {
         fetch(event.request)
             .then((networkResponse) => {
                 return caches.open(CACHE_NAME).then((cache) => {
-                    if (event.request.method === "GET") {
+                    if (event.request.method === "GET" && event.request.url.startsWith('http')) {
                         cache.put(event.request, networkResponse.clone());
                     }
                     return networkResponse;
